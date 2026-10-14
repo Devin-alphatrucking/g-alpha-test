@@ -18,6 +18,24 @@ const ICON = {
   contract: '<svg viewBox="0 0 24 24" width="28" height="28"><ellipse cx="12" cy="7" rx="7" ry="3" fill="#ffc233" stroke="#c78f00"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5" fill="none" stroke="#c78f00" stroke-width="1.2"/></svg>',
 };
 
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Optional real-world feed (public/data/live.json via api/live.php). Off unless the site owner enables it. */
+interface Live {
+  deliveries: number;
+  onTimePct: number;
+}
+async function loadLive(): Promise<Live | null> {
+  try {
+    const r = await fetch('/api/live.php', { cache: 'no-store' });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.enabled && Number.isFinite(d.deliveries) ? { deliveries: d.deliveries, onTimePct: Number(d.onTimePct) || 0 } : null;
+  } catch {
+    return null;
+  }
+}
+
 const save: Save = load();
 const streakBonus = touchStreak(save);
 setMuted(save.muted);
@@ -118,6 +136,8 @@ class HaulScene extends Phaser.Scene {
   private typer: Phaser.Time.TimerEvent | null = null;
   private badges = new Map<string, Phaser.GameObjects.Container>(); // "!" over customers with a story ready
   private tripCrashes = 0;
+  private paused = false;
+  private live: Live | null = null;
   private miniBase!: HTMLCanvasElement;
 
   constructor() {
@@ -164,6 +184,23 @@ class HaulScene extends Phaser.Scene {
     this.input.on('pointerdown', () => this.intro && this.finishIntro());
     this.bindPad();
 
+    // pause: P / Esc, and automatically when the tab is hidden
+    window.addEventListener('keydown', (e) => {
+      if (isDialogOpen()) return;
+      if (e.code === 'Escape') {
+        if (this.modalOpen()) this.closeModals();
+        else this.togglePause();
+      } else if (e.code === 'KeyP') this.togglePause();
+    });
+    document.addEventListener('visibilitychange', () => document.hidden && this.togglePause(true));
+    el('resumeBtn').onclick = () => this.togglePause(false);
+    void loadLive().then((l) => {
+      this.live = l;
+      el('livePill').hidden = !l;
+      if (l) el('liveTxt').textContent = `Alpha today: ${l.deliveries} deliveries${l.onTimePct ? ` · ${Math.round(l.onTimePct)}% on time` : ''}`;
+      if (this.phase === 'idle') this.offerJobs();
+    });
+
     this.wfx = new WeatherFx();
     this.wfx.onThunder = () => audio.thunder();
     if (import.meta.env.DEV) (window as unknown as { __haul: HaulScene }).__haul = this; // dev-only test hook
@@ -174,11 +211,62 @@ class HaulScene extends Phaser.Scene {
     this.startIntro();
   }
 
+  /* ---------- accessibility helpers ---------- */
+
+  private fxShake(ms: number, intensity: number) {
+    if (!reduceMotion) this.cameras.main.shake(ms, intensity);
+  }
+
+  private fxFlash(ms: number, r: number, g: number, b: number) {
+    if (!reduceMotion) this.cameras.main.flash(ms, r, g, b, false);
+  }
+
+  private modalOpen(): boolean {
+    return !!document.querySelector('#garage.on, #journal.on, #epilogue.on');
+  }
+
+  private closeModals() {
+    document.querySelectorAll('#garage.on, #journal.on, #epilogue.on').forEach((m) => m.classList.remove('on'));
+  }
+
+  togglePause(force?: boolean) {
+    if (this.intro || isDialogOpen()) return;
+    const p = force ?? !this.paused;
+    if (p === this.paused) return;
+    this.paused = p;
+    el('pause').classList.toggle('on', p);
+    if (p) {
+      this.scene.pause();
+      audio.suspend();
+      el('resumeBtn').focus();
+    } else {
+      this.scene.resume();
+      audio.resume();
+    }
+  }
+
+  /** Extra coins when the real Alpha Trucking day is busy (+1% per 4 real deliveries, max 25%). */
+  private liveBonus(): number {
+    return this.live ? Math.min(25, Math.floor(this.live.deliveries / 4)) / 100 : 0;
+  }
+
   /* ---------- cinematic intro ---------- */
 
   private startIntro() {
     const cam = this.cameras.main;
     this.intro = true;
+    if (reduceMotion) {
+      // no camera sweep: show the chapter title briefly, then start
+      el('ui').classList.add('intro');
+      const c = el('chapter');
+      const ch = CHAPTERS[chapterOf(totalBeats(save))];
+      c.querySelector('.k')!.textContent = ch.k;
+      c.querySelector('.t')!.textContent = ch.t;
+      c.classList.add('show');
+      this.time.delayedCall(1400, () => this.finishIntro());
+      audio.music();
+      return;
+    }
     this.zoomMul = 0.5;
     cam.setRotation(0.1);
     this.applyZoom();
@@ -487,7 +575,7 @@ class HaulScene extends Phaser.Scene {
     this.tripCrashes++;
     sfx.crash();
     navigator.vibrate?.(60);
-    this.cameras.main.shake(220, 0.009);
+    this.fxShake(220, 0.009);
     this.floatText(this.truck.x, this.truck.y - 40, this.phase === 'toCust' ? 'Crash! -3s' : 'Crash!', '#ff8a8a');
     if (this.phase === 'toCust') this.timeLeft -= 3;
   }
@@ -506,12 +594,16 @@ class HaulScene extends Phaser.Scene {
     };
     el('journalClose').onclick = () => el('journal').classList.remove('on');
     el('epilogueClose').onclick = () => el('epilogue').classList.remove('on');
-    el('soundBtn').textContent = save.muted ? 'Off' : 'On';
+    const syncSound = () => {
+      el('soundBtn').textContent = save.muted ? 'Off' : 'On';
+      el('soundBtn').setAttribute('aria-pressed', String(!save.muted));
+    };
+    syncSound();
     el('soundBtn').onclick = () => {
       save.muted = !save.muted;
       setMuted(save.muted);
       persist(save);
-      el('soundBtn').textContent = save.muted ? 'Off' : 'On';
+      syncSound();
       sfx.tap();
     };
     el('objCancel').onclick = () => {
@@ -583,7 +675,7 @@ class HaulScene extends Phaser.Scene {
     sheet.innerHTML = `<h3>CHOOSE YOUR NEXT JOB${this.combo >= 2 ? ` · combo x${this.combo}` : ''}</h3><div class="jobs">${jobs
       .map((j, i) => {
         const len = j.d < 700 ? 'Short' : j.d < 1100 ? 'Medium' : 'Long';
-        const pay = Math.round(j.base * rewardMul(save));
+        const pay = Math.round(j.base * rewardMul(save) * (1 + this.liveBonus()));
         const face = `<img class="face" alt="" src="${avatarURL(j.to.id, 80)}">`;
         if (j.story) return `<button class="job story" data-i="${i}"><span class="badge">STORY</span><div class="who">${face}${esc(j.to.name)}</div><div class="st">${esc(j.story.title)}</div><div class="item">Carry: ${esc(j.story.item)}</div><div class="meta"><span>${j.limit}s</span><span class="pay">${pay} coins</span></div></button>`;
         return `<button class="job" data-i="${i}"><div class="who">${face}${esc(j.to.name)}</div><span class="tag ${len}">${len}</span><div class="meta"><span>${j.limit}s</span><span class="pay">~${pay} coins</span></div></button>`;
@@ -624,6 +716,7 @@ class HaulScene extends Phaser.Scene {
       return `<div class="jr"><img alt="" src="${avatarURL(c.id, 128)}"><div><div class="nm">${esc(c.name)} ${status}</div><div class="hearts">${hearts}</div><div class="arc">Story <i class="${r.beats > 0 ? 'on' : ''}"></i><i class="${r.beats > 1 ? 'on' : ''}"></i><i class="${r.beats > 2 ? 'on' : ''}"></i></div>${keep}<ul class="mem">${mem.length ? mem.map((m) => `<li>${esc(m)}</li>`).join('') : '<li>You have not met yet. Deliver to them to get started.</li>'}</ul></div></div>`;
     }).join('');
     el('journal').classList.add('on');
+    el('journalClose').focus();
   }
 
   private openGarage() {
@@ -656,6 +749,7 @@ class HaulScene extends Phaser.Scene {
     });
     el('garageStats').innerHTML = `<div class="chip">${save.coins.toLocaleString()} coins</div><div class="chip">${save.deliveries} deliveries</div><div class="chip">${save.streak}d streak</div>`;
     el('garage').classList.add('on');
+    el('garageClose').focus();
   }
 
   private clock(): string {
@@ -771,7 +865,8 @@ class HaulScene extends Phaser.Scene {
     const comboMul = 1 + 0.1 * Math.min(Math.max(this.combo - 1, 0), 4); // +10% per streak step, max +40%
     const starMul = [0, 0.8, 1.2, 1.5][stars];
     const story = job.story;
-    const reward = story ? Math.round(job.base * rewardMul(save)) : Math.round(job.base * rewardMul(save) * starMul * comboMul);
+    const live = 1 + this.liveBonus();
+    const reward = story ? Math.round(job.base * rewardMul(save) * live) : Math.round(job.base * rewardMul(save) * starMul * comboMul * live);
     const xp = story ? 40 : 8 + stars * 6;
     const lvBefore = levelOf(save.xp);
     save.coins += reward;
@@ -803,7 +898,7 @@ class HaulScene extends Phaser.Scene {
     this.floatText(this.truck.x, this.truck.y - 30, `+${reward}`);
     sfx.coin();
     navigator.vibrate?.(25);
-    this.cameras.main.flash(180, 255, 244, 190, false);
+    this.fxFlash(180, 255, 244, 190);
     if (levelOf(save.xp) > lvBefore) {
       window.setTimeout(() => {
         sfx.levelUp();
@@ -849,7 +944,7 @@ class HaulScene extends Phaser.Scene {
     void customerSays(job.to, { stars, session: this.session, rel, weather: this.wfx.kind, night: nightly, crashed }).then((line) => {
       if (this.job === job && this.phase === 'result') this.showBubble(job.to, line); // ignore replies that arrive after "Next job"
     });
-    sheet.innerHTML = `<div class="result"><div class="stars">${[1, 2, 3].map((n) => `<span>${STAR(n <= stars)}</span>`).join('')}</div><div class="big">+${reward} coins</div><div class="chips"><span class="chip">${stars === 3 ? 'Speedy!' : stars === 2 ? 'Good run' : 'A bit late'}</span>${this.combo >= 2 ? `<span class="chip">Combo x${this.combo}</span>` : ''}<span class="chip">+${xp} XP</span></div><button id="nextJob">Next job →</button></div>`;
+    sheet.innerHTML = `<div class="result"><div class="stars">${[1, 2, 3].map((n) => `<span>${STAR(n <= stars)}</span>`).join('')}</div><div class="big">+${reward} coins</div><div class="chips"><span class="chip">${stars === 3 ? 'Speedy!' : stars === 2 ? 'Good run' : 'A bit late'}</span>${this.combo >= 2 ? `<span class="chip">Combo x${this.combo}</span>` : ''}${live > 1 ? `<span class="chip">Live bonus +${Math.round((live - 1) * 100)}%</span>` : ''}<span class="chip">+${xp} XP</span></div><button id="nextJob">Next job →</button></div>`;
     next();
     if (unlocked.length) {
       window.setTimeout(() => {
@@ -873,7 +968,7 @@ class HaulScene extends Phaser.Scene {
   /** All five stories done: the town festival. */
   private finale() {
     this.coins.emitParticleAt(this.truck.x, this.truck.y - 20, 80);
-    this.cameras.main.flash(500, 255, 233, 170, false);
+    this.fxFlash(500, 255, 233, 170);
     sfx.levelUp();
     el('epilogue').classList.add('on');
   }
@@ -908,7 +1003,7 @@ class HaulScene extends Phaser.Scene {
 
     // --- driving ---
     const down = (ks: Phaser.Input.Keyboard.Key[], padOn: boolean) => padOn || ks.some((k) => k.isDown);
-    const ctl = !this.intro && !isDialogOpen();
+    const ctl = !this.intro && !isDialogOpen() && !this.modalOpen();
     const up = ctl && down(this.keys.up, this.pad.up);
     const back = ctl && down(this.keys.down, this.pad.down);
     const left = ctl && down(this.keys.left, this.pad.left);
@@ -937,7 +1032,7 @@ class HaulScene extends Phaser.Scene {
     if (hit && this.speed > 90 && this.time.now > this.bumpT) {
       this.bumpT = this.time.now + 400;
       sfx.bump();
-      cam.shake(120, 0.004);
+      this.fxShake(120, 0.004);
     }
     if (hit) this.speed *= 0.6;
     this.truck.setRotation(this.angle_);

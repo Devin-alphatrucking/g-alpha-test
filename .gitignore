@@ -3,3 +3,4 @@ dist/
 config.php
 .env
 *.log
+public/data/live.json

@@ -1,9 +1,13 @@
 {
   "name": "DVN Haul",
   "short_name": "DVN Haul",
-  "start_url": "./",
+  "description": "A cozy delivery-driving game for every age.",
+  "start_url": "./?play",
   "display": "standalone",
-  "background_color": "#1f2a44",
-  "theme_color": "#1f2a44",
-  "icons": []
+  "orientation": "landscape",
+  "background_color": "#120d24",
+  "theme_color": "#120d24",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
 }

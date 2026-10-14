@@ -111,6 +111,12 @@ function tick(): void {
 }
 
 export const audio = {
+  suspend() {
+    void ctx?.suspend();
+  },
+  resume() {
+    if (ctx) void ctx.resume();
+  },
   unlock() {
     try {
       ac();

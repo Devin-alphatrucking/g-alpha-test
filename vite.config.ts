@@ -11,4 +11,9 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Phaser is big but rarely changes: keep it in its own long-cached chunk, loaded only when the player presses Start.
+    rollupOptions: { output: { manualChunks: { phaser: ['phaser'] } } },
+    chunkSizeWarningLimit: 1500,
+  },
 });

@@ -10,6 +10,8 @@
     <meta property="og:description" content="Drive through golden hour, night and storm in a living town. Free to play in your browser." />
     <meta property="og:type" content="website" />
     <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -149,6 +151,10 @@
       #coins i { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0, var(--amber) 60%, #c78f00); display: inline-block; }
       #sub { font-size: 12px; color: var(--muted); }
       #env { display: flex; gap: 10px; align-items: center; padding: 7px 14px; font-size: 14px; font-weight: 600; border-radius: 999px; }
+      #livePill { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 999px; }
+      #livePill[hidden] { display: none; }
+      .dotlive { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 0 rgba(255,93,115,.6); animation: livepulse 1.8s infinite; }
+      @keyframes livepulse { 70% { box-shadow: 0 0 0 8px rgba(255,93,115,0); } 100% { box-shadow: 0 0 0 0 rgba(255,93,115,0); } }
       #env i { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
       #wx { color: var(--teal); }
       #right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
@@ -269,6 +275,7 @@
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
         .wheel { animation: none; }
+        #flash { display: none !important; } /* no lightning flashes */
       }
     </style>
   </head>
@@ -389,6 +396,7 @@
             <div><div id="coins"><i></i><b id="coinTxt">0</b></div><div id="sub"></div></div>
           </div>
           <div id="env" class="glass"><span id="clock">5:00 PM</span><i></i><span id="wx">Clear</span></div>
+          <div id="livePill" class="glass" hidden><span class="dotlive"></span><span id="liveTxt"></span></div>
         </div>
         <div id="right">
           <div id="btns"><button class="ghost" id="soundBtn" aria-label="Toggle sound">On</button><button class="ghost" id="journalBtn" aria-label="Open town journal">Journal</button><button class="ghost" id="garageBtn" aria-label="Open garage">Garage</button></div>
@@ -402,7 +410,7 @@
         <div id="objBar"><i></i></div>
       </div>
       <div id="sheet" class="glass"></div>
-      <div id="toast" class="glass"></div>
+      <div id="toast" class="glass" role="status" aria-live="polite"></div>
       <div id="coach" class="glass">Drive with <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> or <kbd>W A S D</kbd><small>Space = horn · stay on the road · pick a job below</small></div>
       <div id="pad">
         <button data-dir="left" aria-label="Steer left">◀</button><button data-dir="right" aria-label="Steer right">▶</button>
@@ -427,6 +435,11 @@
       </div>
       <div id="dgNext">Click or press Space ▸ · Esc to skip</div>
     </div>
+    <div id="pause" class="modal" role="dialog" aria-label="Paused"><div class="box glass ebox">
+      <h2>Paused</h2>
+      <p>Take a breather. Press <kbd>P</kbd> or <kbd>Esc</kbd> to keep driving.</p>
+      <button id="resumeBtn">Resume</button>
+    </div></div>
     <div id="journal" class="modal" role="dialog" aria-label="Town journal"><div class="box glass jbox">
       <div class="jhead"><div><div class="jk" id="jChapterK"></div><h2 id="jChapterT"></h2></div><div class="jprog" id="jProg"></div></div>
       <div id="jRows"></div>
