@@ -94,6 +94,8 @@ interface Car {
   wait: number;
   ignore: number;
   stun: number;
+  bus: boolean; // longer, slower, stops at bus stops before intersections
+  dwell: number; // seconds left standing at a bus stop
 }
 
 const LANE = 30;
@@ -367,6 +369,24 @@ class HaulScene extends Phaser.Scene {
         rr(c, 1, 19, 2, 4, 1, '#ff5d5d');
       });
     });
+    // City bus (faces right): long body, window band, roof vents, DVN Transit stripe
+    this.canvasTex('bus', 200, 68, (c) => {
+      c.scale(2, 2);
+      [[14, 1], [14, 29], [72, 1], [72, 29]].forEach(([x, y]) => rr(c, x, y, 14, 4, 1.5, '#161b30'));
+      rr(c, 2, 3, 96, 28, 7, '#e9eef8');
+      rr(c, 2, 3, 96, 28, 7, 'rgba(0,0,0,.06)');
+      rr(c, 4, 5, 92, 24, 5, '#f6f8fd');
+      rr(c, 4, 14, 92, 6, 1, '#2ee6c5');
+      for (let i = 0; i < 6; i++) rr(c, 8 + i * 14, 7, 11, 5, 1.5, '#8fd3ff');
+      for (let i = 0; i < 6; i++) rr(c, 8 + i * 14, 22, 11, 5, 1.5, '#8fd3ff');
+      rr(c, 12, 11, 6, 12, 2, '#d3dbea');
+      rr(c, 40, 10, 8, 14, 2, '#d3dbea');
+      rr(c, 86, 6, 10, 22, 4, '#8fd3ff');
+      rr(c, 96, 6, 3, 5, 1, '#ffe08a');
+      rr(c, 96, 23, 3, 5, 1, '#ffe08a');
+      rr(c, 1, 7, 2, 5, 1, '#ff5d73');
+      rr(c, 1, 22, 2, 5, 1, '#ff5d73');
+    });
     this.canvasTex('dot', 16, 16, (c) => {
       c.fillStyle = '#fff';
       c.beginPath();
@@ -493,7 +513,8 @@ class HaulScene extends Phaser.Scene {
   /* ---------- traffic (left-hand drive) ---------- */
 
   private spawnTraffic() {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 13; i++) {
+      const bus = i >= 10; // 10 cars + 3 buses
       const axis: Axis = i % 2 ? 'h' : 'v';
       const roads = axis === 'h' ? ROADS_H : ROADS_V;
       const dir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
@@ -507,12 +528,13 @@ class HaulScene extends Phaser.Scene {
         y = axis === 'h' ? fixed + laneOff(axis, dir) : pos;
         if (dist({ x, y }, this.truck) > 380) break;
       }
-      const key = `car${i % 5}`;
+      const key = bus ? 'bus' : `car${i % 5}`;
       const angle = axis === 'h' ? (dir > 0 ? 0 : Math.PI) : dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-      const shadow = this.add.image(x, y, key).setScale(0.5).setTint(0x000000).setAlpha(0.28).setDepth(8);
-      const img = this.add.image(x, y, key).setScale(0.5).setDepth(9);
-      const beam = this.add.image(x, y, 'cone').setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(31).setDisplaySize(170, 100).setTint(0xfff1c8).setAlpha(0);
-      this.cars.push({ img, shadow, beam, x, y, angle, speed: 0, top: 95 + Math.random() * 55, axis, fixed, dir, prev: pos, wait: 0, ignore: 0, stun: 0 });
+      const sc = bus ? 0.6 : 0.5; // buses are bigger than cars
+      const shadow = this.add.image(x, y, key).setScale(sc).setTint(0x000000).setAlpha(0.28).setDepth(8);
+      const img = this.add.image(x, y, key).setScale(sc).setDepth(bus ? 9.5 : 9);
+      const beam = this.add.image(x, y, 'cone').setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(31).setDisplaySize(bus ? 220 : 170, bus ? 120 : 100).setTint(0xfff1c8).setAlpha(0);
+      this.cars.push({ img, shadow, beam, x, y, angle, speed: 0, top: bus ? 70 + Math.random() * 25 : 95 + Math.random() * 55, axis, fixed, dir, prev: pos, wait: 0, ignore: 0, stun: 0, bus, dwell: 0 });
     }
   }
 
@@ -520,12 +542,14 @@ class HaulScene extends Phaser.Scene {
     const heading = c.axis === 'h' ? (c.dir > 0 ? 0 : Math.PI) : c.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
     c.angle += Phaser.Math.Angle.Wrap(heading - c.angle) * Math.min(1, 6 * s);
 
-    const ax = c.x + Math.cos(c.angle) * 64;
-    const ay = c.y + Math.sin(c.angle) * 64;
-    let block = c.stun > 0;
+    const look = c.bus ? 88 : 64;
+    const ax = c.x + Math.cos(c.angle) * look;
+    const ay = c.y + Math.sin(c.angle) * look;
+    let block = c.stun > 0 || c.dwell > 0; // dwell = standing at a bus stop
     c.stun -= s;
+    c.dwell -= s;
     if (!block && c.ignore <= 0) {
-      block = dist({ x: ax, y: ay }, this.truck) < 44 || this.cars.some((o) => o !== c && dist({ x: ax, y: ay }, o) < 38);
+      block = dist({ x: ax, y: ay }, this.truck) < (c.bus ? 54 : 44) || this.cars.some((o) => o !== c && dist({ x: ax, y: ay }, o) < (o.bus ? 54 : 38));
     }
     c.ignore -= s;
     const target = block ? 0 : c.top * (1 - 0.2 * this.wfx.rain);
@@ -544,8 +568,15 @@ class HaulScene extends Phaser.Scene {
     else c.x += (c.fixed + laneOff('v', c.dir) - c.x) * Math.min(1, 5 * s);
 
     let along = c.axis === 'h' ? c.x : c.y;
+    if (c.bus) {
+      // bus stop: halt for a few seconds on the approach to each intersection (before the crosswalk)
+      for (const r of c.axis === 'h' ? ROADS_V : ROADS_H) {
+        const stop = r - c.dir * 150;
+        if ((c.prev - stop) * (along - stop) <= 0 && c.prev !== along) c.dwell = 2.2 + Math.random() * 1.6;
+      }
+    }
     for (const r of c.axis === 'h' ? ROADS_V : ROADS_H) {
-      if ((c.prev - r) * (along - r) <= 0 && c.prev !== along && Math.random() < 0.35) {
+      if ((c.prev - r) * (along - r) <= 0 && c.prev !== along && Math.random() < (c.bus ? 0.2 : 0.35)) {
         c.axis = c.axis === 'h' ? 'v' : 'h';
         c.fixed = r;
         c.dir = Math.random() < 0.5 ? 1 : -1;
@@ -561,9 +592,10 @@ class HaulScene extends Phaser.Scene {
 
     c.img.setPosition(c.x, c.y).setRotation(c.angle);
     c.shadow.setPosition(c.x + 5, c.y + 7).setRotation(c.angle);
-    c.beam.setPosition(c.x + Math.cos(c.angle) * 26, c.y + Math.sin(c.angle) * 26).setRotation(c.angle).setAlpha(this.night * 0.5);
+    const nose = c.bus ? 46 : 26;
+    c.beam.setPosition(c.x + Math.cos(c.angle) * nose, c.y + Math.sin(c.angle) * nose).setRotation(c.angle).setAlpha(this.night * 0.5);
 
-    if (dist(c, this.truck) < 46 && this.time.now > this.crashT) this.crash(c);
+    if (dist(c, this.truck) < (c.bus ? 62 : 46) && this.time.now > this.crashT) this.crash(c);
   }
 
   private crash(c: Car) {
@@ -774,7 +806,7 @@ class HaulScene extends Phaser.Scene {
       x.fill();
     };
     dot(DEPOT.x, DEPOT.y, 6, '#ffc233');
-    this.cars.forEach((c) => dot(c.x, c.y, 2.4, 'rgba(255,255,255,.55)'));
+    this.cars.forEach((c) => (c.bus ? dot(c.x, c.y, 3.8, '#2ee6c5') : dot(c.x, c.y, 2.4, 'rgba(255,255,255,.55)')));
     const tgt = this.targetPoint();
     if (tgt) {
       x.strokeStyle = this.phase === 'toDepot' ? '#ffc233' : '#2ee6c5';
