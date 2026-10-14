@@ -1,0 +1,4 @@
+# Keep secrets and sources off the web
+<FilesMatch "^(config\.php|package(-lock)?\.json|tsconfig\.json|vite\.config\.ts)$">
+  Require all denied
+</FilesMatch>

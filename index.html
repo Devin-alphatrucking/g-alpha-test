@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#120d24" />
+    <title>DVN Haul – Every delivery has a story</title>
+    <meta name="description" content="DVN Haul is a cozy delivery-driving game for all ages. Chase the sunset, beat the storm and win over a town of AI characters who remember you." />
+    <meta property="og:title" content="DVN Haul – Every delivery has a story" />
+    <meta property="og:description" content="Drive through golden hour, night and storm in a living town. Free to play in your browser." />
+    <meta property="og:type" content="website" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --navy: #121a33; --ink: #120d24; --panel: rgba(18, 26, 51, .78); --line: rgba(255,255,255,.14);
+        --amber: #ffc233; --teal: #2ee6c5; --coral: #ff5d73; --text: #f4f6ff; --muted: #b3bbdc;
+        --display: Fredoka, system-ui, sans-serif; --body: 'DM Sans', system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html { background: var(--ink); scroll-behavior: auto; }
+      body { margin: 0; color: var(--text); font-family: var(--body); }
+      html.playing, html.playing body { height: 100%; overflow: hidden; touch-action: none; user-select: none; font-family: var(--display); }
+      :focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; border-radius: 10px; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .skip { position: fixed; left: 12px; top: -60px; z-index: 200; background: var(--amber); color: var(--navy); padding: 10px 16px; border-radius: 12px; font-weight: 700; text-decoration: none; transition: top .2s; }
+      .skip:focus { top: 12px; }
+
+      /* ===================== LANDING ===================== */
+      #landing { position: relative; background: var(--ink); overflow-x: clip; }
+      html.playing #landing { display: none; }
+      .nav { position: fixed; z-index: 30; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(16px, 4vw, 48px); pointer-events: none; }
+      .nav > * { pointer-events: auto; }
+      .logo { display: flex; align-items: center; gap: 10px; font: 700 20px var(--display); letter-spacing: .5px; color: #fff; text-decoration: none; }
+      .logo svg { width: 44px; height: 24px; }
+      .cta { font: 600 17px var(--display); color: var(--navy); background: var(--amber); border: 0; border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 0 5px 0 #c78f00, 0 14px 30px rgba(255,194,51,.35); transition: transform .12s, box-shadow .12s; position: relative; }
+      .cta:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #c78f00, 0 18px 36px rgba(255,194,51,.45); }
+      .cta:active { transform: translateY(4px); box-shadow: 0 1px 0 #c78f00; }
+      .cta.sm { padding: 10px 20px; font-size: 15px; }
+      .cta.big { font-size: clamp(20px, 2.4vw, 26px); padding: 20px 44px; }
+
+      #hero { position: relative; height: 100svh; min-height: 600px; overflow: hidden; background: linear-gradient(180deg, #2a1f5e 0%, #6d3a7e 26%, #e8627a 52%, #ff9a5a 72%, #ffd27a 100%); --road: 13vh; }
+      .layer { position: absolute; inset: 0; will-change: transform; }
+      .layer svg { width: 100%; height: 100%; display: block; }
+      #sun { position: absolute; left: 50%; top: 52%; width: min(54vw, 640px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #fff6c9 0 22%, #ffd27a 38%, rgba(255,150,90,.55) 58%, rgba(255,120,90,0) 72%); filter: blur(2px); }
+      #stars-h { position: absolute; inset: 0 0 50% 0; opacity: .55; }
+      .star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; animation: twinkle 3s ease-in-out infinite; }
+      @keyframes twinkle { 50% { opacity: .25; } }
+      .cloud { position: absolute; height: 40px; border-radius: 40px; background: rgba(255,214,200,.28); filter: blur(10px); animation: drift 70s linear infinite; }
+      @keyframes drift { from { transform: translateX(-30vw); } to { transform: translateX(130vw); } }
+      #road { position: absolute; left: 0; right: 0; bottom: 0; height: var(--road); background: linear-gradient(180deg, #2b2438, #1b1626); border-top: 4px solid #3b3350; }
+      #road::before { content: ''; position: absolute; left: 0; right: 0; top: 52%; height: 6px; background: linear-gradient(90deg, #f2c14e 46px, transparent 46px) repeat-x; background-size: 100px 6px; animation: dash .45s linear infinite; }
+      @keyframes dash { to { background-position-x: -100px; } }
+      .truck { position: absolute; left: 50%; bottom: calc(var(--road) - 34px); width: clamp(210px, min(28vw, 36vh), 440px); transform: translateX(-50%); }
+      .truck svg { width: 100%; height: auto; overflow: visible; }
+      .wheel { animation: spin .35s linear infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #beam { position: absolute; left: calc(100% - 6px); top: 48%; width: 70vw; height: 90px; transform: translateY(-50%); background: linear-gradient(90deg, rgba(255,240,190,.75), rgba(255,240,190,0)); clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%); opacity: 0; }
+      .hero-copy { position: absolute; left: 0; right: 0; top: clamp(70px, 10vh, 140px); text-align: center; padding: 0 16px; }
+      .title { margin: 0; font: 700 clamp(56px, min(15vw, 17vh), 220px)/.86 var(--display); letter-spacing: -.02em; color: #fff; text-shadow: 0 6px 0 rgba(120,40,70,.35), 0 20px 50px rgba(60,10,60,.35); }
+      .title .ln { display: block; overflow: hidden; padding: .04em .1em .1em; }
+      .title .ch { display: inline-block; will-change: transform; }
+      .title .ln.amber { color: var(--amber); }
+      .tag { margin: 14px auto 20px; max-width: 480px; font-size: clamp(15px, min(2vw, 2.6vh), 21px); color: #fff; opacity: .92; text-shadow: 0 2px 14px rgba(70,10,50,.5); }
+      .scroll-cue { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2; font-size: 12px; letter-spacing: .25em; text-transform: uppercase; color: #fff; opacity: .75; display: none; white-space: nowrap; }
+      @media (max-width: 640px) { .scroll-cue { font-size: 10px; letter-spacing: .18em; } }
+      @media (min-height: 760px) { .scroll-cue { display: block; } }
+
+      /* ---------- scroll story ---------- */
+      #story { position: relative; height: 100svh; overflow: hidden; background: #ff9a5a; --road: 15vh; }
+      .sky { position: absolute; inset: 0; }
+      #sky-day { background: linear-gradient(180deg, #6d3a7e 0%, #e8627a 45%, #ff9a5a 72%, #ffd27a 100%); }
+      #sky-dusk { background: linear-gradient(180deg, #1f1b4d 0%, #5a3a8a 45%, #c8587a 78%, #ff9a6a 100%); opacity: 0; }
+      #sky-night { background: linear-gradient(180deg, #060a1f 0%, #0d1740 55%, #1b2a5e 100%); opacity: 0; }
+      #stars-s { position: absolute; inset: 0 0 40% 0; opacity: 0; }
+      #orb { position: absolute; left: 68%; top: 42%; width: min(24vw, 260px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #fff6c9 0 30%, #ffd27a 55%, rgba(255,150,90,0) 72%); }
+      #moon { position: absolute; left: 70%; top: 16%; width: min(11vw, 120px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff 0, #dfe6ff 45%, #aab6e8 100%); box-shadow: 0 0 60px 18px rgba(170,190,255,.35); opacity: 0; transform: translateY(40vh); }
+      #hills-s { position: absolute; inset: 0; }
+      #road-s { position: absolute; left: 0; right: 0; bottom: 0; height: var(--road); background: linear-gradient(180deg, #2b2438, #15111f); border-top: 4px solid #3b3350; }
+      #road-s::before { content: ''; position: absolute; left: 0; right: 0; top: 52%; height: 6px; background: linear-gradient(90deg, #f2c14e 46px, transparent 46px) repeat-x; background-size: 100px 6px; animation: dash .45s linear infinite; }
+      #truck-s { position: absolute; left: 0; bottom: calc(var(--road) - 34px); width: clamp(220px, 26vw, 400px); }
+      #truck-s svg { width: 100%; height: auto; overflow: visible; }
+      #beam-s { position: absolute; left: calc(100% - 6px); top: 48%; width: 60vw; height: 90px; transform: translateY(-50%); background: linear-gradient(90deg, rgba(255,240,190,.8), rgba(255,240,190,0)); clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%); opacity: 0; }
+      #srain { position: absolute; inset: 0; opacity: 0; background: repeating-linear-gradient(105deg, transparent 0 9px, rgba(200,220,255,.32) 9px 10px); background-size: 240px 240px; animation: rainmove .35s linear infinite; }
+      @keyframes rainmove { to { background-position: -60px 240px; } }
+      .chap { position: absolute; left: clamp(20px, 6vw, 110px); top: 17vh; max-width: min(600px, 88vw); opacity: 0; will-change: transform, opacity; }
+      .chap .n { font: 600 14px var(--display); letter-spacing: .3em; color: var(--amber); text-transform: uppercase; }
+      .chap h2 { margin: 8px 0 14px; font: 700 clamp(38px, 6.4vw, 92px)/.98 var(--display); letter-spacing: -.01em; text-shadow: 0 8px 40px rgba(0,0,0,.35); }
+      .chap p { margin: 0; font-size: clamp(16px, 1.7vw, 20px); color: #fff; opacity: .9; max-width: 460px; text-shadow: 0 2px 14px rgba(0,0,0,.4); }
+      #sclock { position: absolute; right: clamp(16px, 4vw, 48px); top: 92px; font: 600 22px var(--display); padding: 8px 18px; border-radius: 999px; background: rgba(18,13,36,.45); backdrop-filter: blur(8px); border: 1px solid var(--line); }
+
+      /* ---------- cast ---------- */
+      #cast { position: relative; padding: clamp(80px, 14vw, 170px) clamp(16px, 5vw, 80px); background: linear-gradient(180deg, #1b2a5e 0%, #120d24 22%); }
+      #cast h2, #finale h2 { margin: 0; font: 700 clamp(40px, 7vw, 100px)/.95 var(--display); letter-spacing: -.015em; }
+      #cast .lead { max-width: 560px; color: var(--muted); font-size: clamp(16px, 1.7vw, 20px); margin: 18px 0 clamp(36px, 5vw, 64px); }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; }
+      .card { position: relative; border-radius: 28px; padding: 22px; background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border: 1px solid var(--line); transition: transform .3s cubic-bezier(.2,1.2,.4,1), border-color .3s; will-change: transform; }
+      .card:hover { transform: translateY(-8px) rotate(-1.2deg); border-color: rgba(255,194,51,.55); }
+      .card img { width: 96px; height: 96px; border-radius: 50%; display: block; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+      .card h3 { margin: 16px 0 2px; font: 600 22px var(--display); }
+      .card .role { font-size: 13px; color: var(--amber); letter-spacing: .08em; text-transform: uppercase; }
+      .card blockquote { margin: 14px 0 0; padding: 12px 14px; border-radius: 16px 16px 16px 4px; background: rgba(255,255,255,.09); font-size: 15px; line-height: 1.4; color: #eef; }
+
+      #finale { position: relative; min-height: 90svh; display: grid; place-items: center; text-align: center; padding: 120px 20px 80px; background: radial-gradient(ellipse at 50% 110%, #ff9a5a 0%, #7a3a7e 38%, #120d24 72%); overflow: hidden; }
+      #finale p { color: #fff; opacity: .85; margin: 18px auto 34px; max-width: 460px; font-size: clamp(16px, 1.8vw, 20px); }
+      #finale small { display: block; margin-top: 22px; color: #e8dcff; opacity: .75; font-size: 14px; }
+      footer.foot { padding: 26px 20px 34px; text-align: center; font-size: 13px; color: var(--muted); background: #0b0818; }
+      #glow { position: fixed; left: 0; top: 0; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; background: radial-gradient(circle, rgba(255,194,51,.22), rgba(255,194,51,0) 65%); pointer-events: none; z-index: 25; mix-blend-mode: screen; opacity: 0; transition: opacity .3s; }
+      @media (pointer: coarse) { #glow { display: none; } }
+
+      /* transition curtain */
+      #curtain { position: fixed; inset: 0; z-index: 300; background: radial-gradient(circle at 50% 50%, #ffd27a, #ffc233 60%); clip-path: circle(0 at 50% 50%); pointer-events: none; display: grid; place-items: center; }
+      #curtain svg { width: min(52vw, 360px); opacity: 0; }
+      #curtain.on { pointer-events: all; }
+
+      /* ===================== GAME ===================== */
+      #game, #vignette, #ui, #rain, #fog, #flash, #chapter { display: none; }
+      html.playing #game, html.playing #vignette, html.playing #ui, html.playing #rain, html.playing #fog, html.playing #flash { display: block; }
+      #game { position: fixed; inset: 0; background: #121a33; }
+      #game canvas { display: block; }
+      #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 2; background: radial-gradient(ellipse at center, transparent 55%, rgba(8,12,30,.5) 100%); }
+      #rain { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+      #fog { position: fixed; inset: 0; pointer-events: none; z-index: 3; opacity: 0; background: radial-gradient(ellipse at center, rgba(222,226,236,.25) 10%, rgba(222,226,236,.7) 100%); }
+      #flash { position: fixed; inset: 0; pointer-events: none; z-index: 4; background: #e8efff; opacity: 0; }
+      #flash.go { animation: bolt .9s ease-out; }
+      @keyframes bolt { 0% { opacity: 0; } 6% { opacity: .75; } 14% { opacity: .1; } 22% { opacity: .55; } 100% { opacity: 0; } }
+      #ui { position: fixed; inset: 0; z-index: 10; pointer-events: none; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); transition: opacity .9s; }
+      #ui.intro { opacity: 0; }
+      html.playing #chapter { display: block; }
+      #chapter { position: fixed; inset: 0; z-index: 12; display: none; pointer-events: none; text-align: center; padding-top: 30vh; opacity: 0; transition: opacity .8s; font-family: var(--display); }
+      #chapter.show { opacity: 1; }
+      #chapter .k { font-weight: 600; letter-spacing: .5em; font-size: 14px; color: var(--amber); text-shadow: 0 2px 12px #000a; }
+      #chapter .t { font-weight: 700; font-size: clamp(48px, 9vw, 120px); line-height: 1; margin-top: 8px; text-shadow: 0 8px 40px #0008; letter-spacing: -.01em; }
+      #chapter .s { margin-top: 14px; opacity: .85; font-size: 15px; text-shadow: 0 2px 10px #000a; }
+      .glass { background: var(--panel); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 8px 28px rgba(0,0,0,.28); }
+      #ui button { font: inherit; font-weight: 600; color: var(--navy); background: var(--amber); border: 0; border-radius: 14px; padding: 10px 18px; cursor: pointer; pointer-events: auto; box-shadow: 0 4px 0 #c78f00; transition: transform .08s, box-shadow .08s, opacity .2s; }
+      #ui button:active { transform: translateY(3px); box-shadow: 0 1px 0 #c78f00; }
+      #ui button:disabled { opacity: .4; box-shadow: none; cursor: default; }
+      #ui button.ghost { background: var(--panel); color: var(--text); border: 1px solid var(--line); box-shadow: none; height: 46px; min-width: 46px; padding: 0 14px; font-size: 14px; border-radius: 23px; backdrop-filter: blur(14px); }
+
+      #top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      #left { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+      #profile { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; }
+      #ring { --p: 0; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--teal) calc(var(--p) * 1%), rgba(255,255,255,.15) 0); }
+      #ring span { width: 36px; height: 36px; border-radius: 50%; background: var(--navy); display: grid; place-items: center; font-weight: 700; font-size: 16px; }
+      #coins { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+      #coins i { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0, var(--amber) 60%, #c78f00); display: inline-block; }
+      #sub { font-size: 12px; color: var(--muted); }
+      #env { display: flex; gap: 10px; align-items: center; padding: 7px 14px; font-size: 14px; font-weight: 600; border-radius: 999px; }
+      #env i { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
+      #wx { color: var(--teal); }
+      #right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+      #btns { display: flex; gap: 8px; }
+      #minimap { width: 140px; height: 93px; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+
+      #objective { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translate(-50%, -140%); transition: transform .35s cubic-bezier(.2,1.3,.4,1); width: min(380px, calc(100vw - 360px)); min-width: 250px; padding: 10px 14px; }
+      #objective.on { transform: translate(-50%, 0); }
+      #objTitle { font-weight: 500; font-size: 16px; line-height: 1.25; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      #objTitle b { font-weight: 700; color: var(--amber); }
+      .mini { width: 24px; height: 24px; border-radius: 50%; }
+      #objSub { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 3px; }
+      #objBar { height: 8px; border-radius: 6px; background: rgba(255,255,255,.15); margin-top: 8px; overflow: hidden; }
+      #objBar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--teal), var(--amber)); border-radius: 6px; transition: width .2s linear; }
+      #objBar.late i { background: var(--coral); }
+      #ui #objCancel { position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 13px; background: var(--panel); color: var(--text); border: 1px solid var(--line); box-shadow: none; }
+
+      #sheet { position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translate(-50%, 130%); transition: transform .4s cubic-bezier(.2,1.2,.4,1); width: min(720px, calc(100vw - 24px)); padding: 14px; pointer-events: auto; }
+      #sheet.on { transform: translate(-50%, 0); }
+      #sheet h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: .12em; }
+      .jobs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      #ui .job { text-align: left; background: rgba(255,255,255,.07); color: var(--text); border: 1px solid var(--line); box-shadow: none; padding: 12px; border-radius: 16px; display: flex; flex-direction: column; gap: 6px; }
+      #ui .job:hover { background: rgba(255,255,255,.14); }
+      #ui .job:active { transform: scale(.97); box-shadow: none; }
+      .job .who { font-size: 15px; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+      .job .face { width: 38px; height: 38px; border-radius: 50%; flex: none; }
+      .job .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; align-self: flex-start; background: rgba(255,255,255,.12); }
+      .job .tag.Long { background: rgba(255,93,115,.3); } .job .tag.Medium { background: rgba(255,194,51,.28); } .job .tag.Short { background: rgba(46,230,197,.25); }
+      .job .meta { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; }
+      .job .pay { color: var(--amber); font-weight: 700; }
+      #ui .job.story { border-color: rgba(255,194,51,.7); background: linear-gradient(160deg, rgba(255,194,51,.2), rgba(255,255,255,.05)); box-shadow: 0 0 0 1px rgba(255,194,51,.25), 0 6px 22px rgba(255,194,51,.18); position: relative; }
+      .job .badge { font-size: 10px; font-weight: 700; letter-spacing: .14em; color: var(--navy); background: var(--amber); padding: 2px 8px; border-radius: 99px; align-self: flex-start; }
+      .job .st { font-size: 14px; font-weight: 600; }
+      .job .item { font-size: 12px; color: var(--muted); }
+      .result { text-align: center; }
+      .stars { display: flex; justify-content: center; gap: 6px; height: 46px; }
+      .stars span { display: inline-block; animation: pop .5s both; } .stars span:nth-child(2) { animation-delay: .15s; } .stars span:nth-child(3) { animation-delay: .3s; }
+      @keyframes pop { from { transform: scale(0) rotate(-40deg); } 60% { transform: scale(1.3) rotate(8deg); } to { transform: scale(1); } }
+      .result .big { font-size: 26px; font-weight: 700; color: var(--amber); margin-top: 4px; }
+      .result .chips { display: flex; justify-content: center; gap: 8px; margin: 6px 0 12px; flex-wrap: wrap; }
+      .chip { background: rgba(255,255,255,.1); border-radius: 99px; padding: 3px 12px; font-size: 13px; }
+
+      #toast { position: absolute; top: 26%; left: 50%; transform: translate(-50%, -20px); opacity: 0; transition: all .35s; padding: 12px 22px; font-size: 20px; font-weight: 700; text-align: center; pointer-events: none; }
+      #toast.on { opacity: 1; transform: translate(-50%, 0); }
+      #coach { position: absolute; left: 50%; bottom: 36%; transform: translateX(-50%); padding: 14px 22px; text-align: center; font-size: 17px; font-weight: 600; pointer-events: none; animation: bob 1.4s ease-in-out infinite; display: none; }
+      #coach small { display: block; color: var(--muted); font-weight: 400; font-size: 13px; margin-top: 2px; }
+      @keyframes bob { 50% { transform: translate(-50%, -8px); } }
+      kbd { display: inline-block; min-width: 24px; padding: 1px 6px; margin: 0 1px; border-radius: 6px; background: rgba(255,255,255,.14); border: 1px solid var(--line); border-bottom-width: 3px; font-family: inherit; font-size: 14px; }
+      #pad { display: none; position: absolute; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); justify-content: space-between; align-items: flex-end; gap: 10px; pointer-events: none; z-index: 5; }
+      #pad .sp { flex: 1; }
+      #ui #pad button { width: 72px; height: 72px; border-radius: 50%; padding: 0; font-size: 26px; background: rgba(18,26,51,.6); color: var(--text); border: 1px solid var(--line); box-shadow: none; backdrop-filter: blur(10px); touch-action: none; }
+      #ui #pad button.down { background: var(--amber); color: var(--navy); transform: scale(.94); }
+      @media (pointer: coarse) { html.playing #pad { display: flex; } #sheet { bottom: calc(110px + env(safe-area-inset-bottom)); } }
+
+      #garage { position: absolute; inset: 0; background: rgba(8,12,30,.6); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; pointer-events: auto; }
+      #garage.on { display: flex; }
+      #garage .box { width: min(440px, calc(100vw - 24px)); padding: 20px; animation: rise .3s cubic-bezier(.2,1.2,.4,1); }
+      @keyframes rise { from { transform: translateY(40px) scale(.95); opacity: 0; } }
+      #garage h2 { margin: 0; font-size: 24px; } #garage .lead { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+      .up { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+      .up .ic { width: 50px; height: 50px; background: rgba(255,255,255,.08); border-radius: 14px; display: grid; place-items: center; }
+      .up .info { flex: 1; } .up .nm { font-weight: 600; } .up .ds { font-size: 12px; color: var(--muted); }
+      .pips { display: flex; gap: 4px; margin-top: 5px; } .pips i { width: 16px; height: 6px; border-radius: 4px; background: rgba(255,255,255,.18); } .pips i.on { background: var(--teal); }
+      .stats { display: flex; gap: 8px; margin-top: 10px; } .stats .chip { flex: 1; text-align: center; }
+
+      /* ---- story: dialogue, journal, epilogue ---- */
+      #dialog { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translate(-50%, 130%); z-index: 40; width: min(780px, calc(100vw - 24px)); padding: 18px 20px 14px; display: none; grid-template-columns: 84px 1fr; gap: 16px; align-items: start; pointer-events: auto; transition: transform .45s cubic-bezier(.2,1.2,.4,1); cursor: pointer; font-family: var(--display); }
+      html.playing #dialog { display: grid; }
+      #dialog.on { transform: translate(-50%, 0); }
+      #dgFace { width: 84px; height: 84px; border-radius: 50%; box-shadow: 0 8px 22px rgba(0,0,0,.35); }
+      #dgKick { font-size: 12px; letter-spacing: .22em; color: var(--amber); font-weight: 600; }
+      #dgName { font-weight: 700; font-size: 20px; margin-top: 2px; }
+      #dgText { font-size: 19px; line-height: 1.4; min-height: 3em; margin-top: 4px; font-weight: 500; }
+      #dgText.note { font-style: italic; color: var(--muted); }
+      #dgChoices { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+      #dgChoices button { text-align: left; font: inherit; font-weight: 600; font-size: 16px; color: var(--text); background: rgba(255,255,255,.09); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; cursor: pointer; transition: background .15s, transform .1s, border-color .15s; }
+      #dgChoices button:hover { background: rgba(255,194,51,.18); border-color: rgba(255,194,51,.6); transform: translateX(4px); }
+      #dgNext { grid-column: 1 / -1; justify-self: end; font-size: 12px; color: var(--muted); margin-top: -4px; }
+      .modal { position: fixed; inset: 0; z-index: 45; background: rgba(8,12,30,.66); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; pointer-events: auto; font-family: var(--display); padding: 12px; }
+      .modal.on { display: flex; }
+      html:not(.playing) .modal { display: none; }
+      .modal .box { animation: rise .35s cubic-bezier(.2,1.2,.4,1); }
+      .modal button { font: inherit; font-weight: 600; color: var(--navy); background: var(--amber); border: 0; border-radius: 14px; padding: 10px 20px; cursor: pointer; box-shadow: 0 4px 0 #c78f00; }
+      .modal button:active { transform: translateY(3px); box-shadow: 0 1px 0 #c78f00; }
+      .jbox { width: min(760px, 100%); max-height: 88vh; overflow: auto; padding: 22px; }
+      .jhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+      .jk { font-size: 12px; letter-spacing: .3em; color: var(--amber); font-weight: 600; }
+      .jbox h2, .ebox h2 { margin: 2px 0 0; font-size: clamp(26px, 5vw, 38px); }
+      .jprog { font-size: 14px; color: var(--muted); }
+      .jr { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+      .jr img { width: 64px; height: 64px; border-radius: 50%; }
+      .jr .nm { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 700; font-size: 19px; }
+      .pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; letter-spacing: .04em; }
+      .pill.ready { background: var(--amber); color: var(--navy); animation: pulse 1.6s ease-in-out infinite; }
+      .pill.locked { background: rgba(255,255,255,.1); color: var(--muted); }
+      .pill.done { background: rgba(46,230,197,.25); color: var(--teal); }
+      @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(255,194,51,.25); } }
+      .hearts { display: flex; gap: 3px; margin: 6px 0; } .hearts svg { width: 20px; height: 20px; }
+      .arc { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+      .arc i { width: 26px; height: 6px; border-radius: 4px; background: rgba(255,255,255,.16); } .arc i.on { background: var(--teal); }
+      .keep { font-size: 13px; color: var(--amber); margin-top: 6px; }
+      ul.mem { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
+      ul.mem li::before { content: '· '; color: var(--amber); }
+      #journalBtn.dot::after { content: ''; position: absolute; top: 6px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px rgba(255,93,115,.3); }
+      #ui #journalBtn { position: relative; }
+      .ebox { width: min(520px, 100%); padding: 28px; text-align: center; }
+      .ebox p { color: var(--muted); line-height: 1.5; font-size: 16px; }
+      .ebox p b { color: var(--text); }
+
+      @media (max-width: 640px) {
+        #dialog { grid-template-columns: 56px 1fr; gap: 12px; padding: 14px; } #dgFace { width: 56px; height: 56px; } #dgText { font-size: 17px; }
+        .jr { grid-template-columns: 48px 1fr; } .jr img { width: 48px; height: 48px; }
+        .jobs { grid-template-columns: 1fr; gap: 8px; } #ui .job { flex-direction: row; align-items: center; justify-content: space-between; }
+        #objective { top: 120px; width: calc(100vw - 24px); }
+        #minimap { width: 108px; height: 72px; } #sub { display: none; }
+        .hero-copy { top: clamp(84px, 14vh, 150px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+        .wheel { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#finale">Skip to play</a>
+
+    <!-- shared SVG art -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="logo" viewBox="0 0 110 60">
+          <rect x="2" y="12" width="62" height="36" rx="6" fill="#fff"/><rect x="2" y="27" width="62" height="7" fill="#ffc233"/>
+          <path d="M68 20h22l14 12v16H68z" fill="#1b2547"/><path d="M78 24h10l9 9H78z" fill="#8fd3ff"/>
+          <circle cx="22" cy="50" r="8" fill="#161b30"/><circle cx="52" cy="50" r="8" fill="#161b30"/><circle cx="90" cy="50" r="8" fill="#161b30"/>
+        </symbol>
+        <symbol id="truck-side" viewBox="0 0 330 140">
+          <defs>
+            <linearGradient id="tr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#cfd6ea"/></linearGradient>
+            <linearGradient id="cab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4f8c"/><stop offset="1" stop-color="#1f2c54"/></linearGradient>
+          </defs>
+          <ellipse cx="165" cy="128" rx="160" ry="8" fill="#000" opacity=".35"/>
+          <rect x="4" y="12" width="214" height="86" rx="10" fill="url(#tr)"/>
+          <rect x="4" y="54" width="214" height="13" fill="#ffc233"/>
+          <text x="111" y="42" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="700" font-size="28" fill="#1b2547">DVN HAUL</text>
+          <text x="111" y="86" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="500" font-size="12" letter-spacing="3" fill="#56608a">ALPHA TRUCKING</text>
+          <path d="M224 34h44q14 0 24 14l24 22q6 6 6 14v14H224z" fill="url(#cab)"/>
+          <path d="M236 42h30q8 0 14 8l14 16h-58z" fill="#8fd3ff"/><path d="M240 44h14l-12 22h-6z" fill="#fff" opacity=".35"/>
+          <rect x="4" y="94" width="318" height="12" rx="4" fill="#161b30"/>
+          <circle cx="322" cy="86" r="6" fill="#ffe08a"/>
+          <g class="wheel"><circle cx="58" cy="108" r="19" fill="#161b30"/><circle cx="58" cy="108" r="8" fill="#9aa3c2"/><path d="M58 100v16M50 108h16" stroke="#161b30" stroke-width="3"/></g>
+          <g class="wheel"><circle cx="112" cy="108" r="19" fill="#161b30"/><circle cx="112" cy="108" r="8" fill="#9aa3c2"/><path d="M112 100v16M104 108h16" stroke="#161b30" stroke-width="3"/></g>
+          <g class="wheel"><circle cx="266" cy="108" r="19" fill="#161b30"/><circle cx="266" cy="108" r="8" fill="#9aa3c2"/><path d="M266 100v16M258 108h16" stroke="#161b30" stroke-width="3"/></g>
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- ===================== LANDING ===================== -->
+    <div id="landing">
+      <div id="glow"></div>
+      <header class="nav">
+        <a class="logo" href="#hero" aria-label="DVN Haul home"><svg aria-hidden="true"><use href="#logo"/></svg>DVN HAUL</a>
+        <button class="cta sm" data-start>Play now</button>
+      </header>
+
+      <main>
+        <section id="hero" aria-label="DVN Haul">
+          <div class="layer" data-d="0.01"><div id="sun"></div><div id="stars-h"></div></div>
+          <div class="layer" data-d="0.015" aria-hidden="true"><div class="cloud" style="top:16%;width:260px;animation-delay:-10s"></div><div class="cloud" style="top:30%;width:340px;animation-delay:-38s"></div><div class="cloud" style="top:9%;width:200px;animation-delay:-55s"></div></div>
+          <div class="layer" data-d="0.025" aria-hidden="true">
+            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice"><path d="M0 560L110 470 220 540 360 430 500 540 650 450 790 550 940 440 1100 545 1250 455 1440 540V800H0Z" fill="#8a3f78" opacity=".75"/></svg>
+          </div>
+          <div class="layer" data-d="0.045" aria-hidden="true">
+            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice"><path d="M0 610Q200 520 420 590T860 585T1240 570T1440 590V800H0Z" fill="#6a2f66"/></svg>
+          </div>
+          <div class="layer" data-d="0.075" aria-hidden="true">
+            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice"><path d="M0 660Q260 600 520 650T1000 640T1440 650V800H0Z" fill="#3d1f4a"/>
+              <g fill="#26123a"><path d="M130 690v-90M130 650l-26-26M130 640l22-20" stroke="#26123a" stroke-width="6" fill="none"/><circle cx="130" cy="585" r="36"/><circle cx="104" cy="610" r="22"/><circle cx="158" cy="606" r="24"/>
+              <path d="M1290 700v-110" stroke="#26123a" stroke-width="7" fill="none"/><circle cx="1290" cy="570" r="42"/><circle cx="1260" cy="600" r="24"/><circle cx="1322" cy="598" r="26"/></g>
+              <g stroke="#26123a" stroke-width="5" fill="none"><path d="M440 700V560M410 580h60M720 700V572M690 592h60"/><path d="M440 570Q580 610 720 582" stroke-width="2"/></g></svg>
+          </div>
+          <div id="road"></div>
+          <div class="truck" id="truck-h"><div id="beam"></div><svg viewBox="0 0 330 140" role="img" aria-label="DVN Haul truck"><use href="#truck-side"/></svg></div>
+          <div class="hero-copy">
+            <h1 class="title" aria-label="DVN Haul"><span class="ln" aria-hidden="true">DVN</span><span class="ln amber" aria-hidden="true">HAUL</span></h1>
+            <p class="tag">A cozy delivery game for every age. Chase the sunset, beat the storm, and win over a town that remembers you.</p>
+            <button class="cta big" data-start id="startBtn">Start the engine</button>
+          </div>
+          <div class="scroll-cue" aria-hidden="true">Scroll to see the night shift</div>
+        </section>
+
+        <section id="story" aria-label="The journey">
+          <div class="sky" id="sky-day"></div><div class="sky" id="sky-dusk"></div><div class="sky" id="sky-night"></div>
+          <div id="stars-s"></div>
+          <div id="orb"></div><div id="moon"></div>
+          <div id="hills-s" aria-hidden="true">
+            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice" style="width:120%;height:100%;margin-left:-10%"><path id="far" d="M0 560L110 470 220 540 360 430 500 540 650 450 790 550 940 440 1100 545 1250 455 1440 540V800H0Z" fill="#2d1d58" opacity=".85"/><path d="M0 650Q260 590 520 640T1000 630T1440 640V800H0Z" fill="#190f33"/></svg>
+          </div>
+          <div id="srain"></div>
+          <div id="road-s"></div>
+          <div id="truck-s"><div id="beam-s"></div><svg viewBox="0 0 330 140" aria-hidden="true"><use href="#truck-side"/></svg></div>
+          <div id="sclock" aria-hidden="true">5:12 PM</div>
+          <article class="chap" id="ch1"><div class="n">Chapter 01</div><h2>A town that remembers you.</h2><p>Every customer has a story. Deliver on time and they'll tell you more, and they won't forget.</p></article>
+          <article class="chap" id="ch2"><div class="n">Chapter 02</div><h2>Beat the clock. Beat the storm.</h2><p>Day turns to dusk. Rain slicks the road. Your headlights are the only thing between you and the three-star run.</p></article>
+          <article class="chap" id="ch3"><div class="n">Chapter 03</div><h2>Build the legend.</h2><p>Upgrade your rig, chain combos, keep the daily streak alive. Easy to start. Hard to put down.</p></article>
+        </section>
+
+        <section id="cast" aria-label="The locals">
+          <h2>Meet the locals.</h2>
+          <p class="lead">Five neighbours, five personalities. Each reacts to the way you drive, powered by AI so no two deliveries sound the same.</p>
+          <div class="cards" id="cards"></div>
+        </section>
+
+        <section id="finale" aria-label="Play">
+          <div>
+            <h2>The road<br />is waiting.</h2>
+            <p>Free in your browser. No download. Works on desktop, tablet and phone.</p>
+            <button class="cta big" data-start id="startBtn2">Start the engine</button>
+            <small>Drive with arrow keys or WASD · on-screen controls on touch</small>
+          </div>
+        </section>
+      </main>
+      <footer class="foot">DVN Haul · A DVN Alpha Trucking experience</footer>
+    </div>
+
+    <div id="curtain" aria-hidden="true"><svg viewBox="0 0 110 60"><use href="#logo"/></svg></div>
+
+    <!-- ===================== GAME ===================== -->
+    <div id="game"></div>
+    <div id="vignette"></div>
+    <canvas id="rain"></canvas>
+    <div id="fog"></div>
+    <div id="flash"></div>
+    <div id="chapter"><div class="k">CHAPTER ONE</div><div class="t">Golden Hour</div><div class="s">Press space to skip</div></div>
+    <div id="ui" class="intro">
+      <div id="top">
+        <div id="left">
+          <div id="profile" class="glass">
+            <div id="ring"><span id="lvl">1</span></div>
+            <div><div id="coins"><i></i><b id="coinTxt">0</b></div><div id="sub"></div></div>
+          </div>
+          <div id="env" class="glass"><span id="clock">5:00 PM</span><i></i><span id="wx">Clear</span></div>
+        </div>
+        <div id="right">
+          <div id="btns"><button class="ghost" id="soundBtn" aria-label="Toggle sound">On</button><button class="ghost" id="journalBtn" aria-label="Open town journal">Journal</button><button class="ghost" id="garageBtn" aria-label="Open garage">Garage</button></div>
+          <canvas id="minimap" width="280" height="186"></canvas>
+        </div>
+      </div>
+      <div id="objective" class="glass">
+        <button id="objCancel" aria-label="Cancel job">✕</button>
+        <div id="objTitle"></div>
+        <div id="objSub"><span id="objDist"></span><span id="objTime"></span></div>
+        <div id="objBar"><i></i></div>
+      </div>
+      <div id="sheet" class="glass"></div>
+      <div id="toast" class="glass"></div>
+      <div id="coach" class="glass">Drive with <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd> or <kbd>W A S D</kbd><small>Space = horn · stay on the road · pick a job below</small></div>
+      <div id="pad">
+        <button data-dir="left" aria-label="Steer left">◀</button><button data-dir="right" aria-label="Steer right">▶</button>
+        <span class="sp"></span>
+        <button data-dir="down" aria-label="Brake">▼</button><button data-dir="up" aria-label="Gas">▲</button>
+      </div>
+      <div id="garage"><div class="box glass">
+        <h2>DVN Garage</h2><div class="lead">Upgrade your rig to haul faster and earn more.</div>
+        <div id="garageBody"></div>
+        <div class="stats" id="garageStats"></div>
+        <div style="text-align:right;margin-top:14px"><button id="garageClose">Back to the road</button></div>
+      </div></div>
+    </div>
+    <!-- story dialogue + journal + ending -->
+    <div id="dialog" class="glass" role="dialog" aria-live="polite" aria-label="Story">
+      <img id="dgFace" alt="" width="84" height="84" />
+      <div class="dg-body">
+        <div id="dgKick"></div>
+        <div id="dgName"></div>
+        <div id="dgText"></div>
+        <div id="dgChoices"></div>
+      </div>
+      <div id="dgNext">Click or press Space ▸ · Esc to skip</div>
+    </div>
+    <div id="journal" class="modal" role="dialog" aria-label="Town journal"><div class="box glass jbox">
+      <div class="jhead"><div><div class="jk" id="jChapterK"></div><h2 id="jChapterT"></h2></div><div class="jprog" id="jProg"></div></div>
+      <div id="jRows"></div>
+      <div style="text-align:right;margin-top:14px"><button id="journalClose">Close</button></div>
+    </div></div>
+    <div id="epilogue" class="modal" role="dialog" aria-label="Epilogue"><div class="box glass ebox">
+      <div class="jk">EPILOGUE</div>
+      <h2>The Town Lights</h2>
+      <p>Tonight the old lighthouse lamp glows over the square. Maple's pies are on the tables, Rex's library has its last brick, Pixel is streaming live, Dr. Whiskers brought the kittens, and Captain Nemo tells his best story yet.</p>
+      <p><b>Everyone saved you a seat.</b> Thank you for driving the town home.</p>
+      <button id="epilogueClose">Keep driving</button>
+    </div></div>
+    <noscript><p style="position:fixed;inset:auto 0 0 0;padding:16px;background:#ffc233;color:#121a33;text-align:center">DVN Haul needs JavaScript to run.</p></noscript>
+    <script type="module" src="/src/landing.ts"></script>
+  </body>
+</html>
