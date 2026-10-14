@@ -29,7 +29,10 @@ Touch screens get an on-screen D-pad automatically.
 
 1. `npm run build`
 2. Upload the **contents of `dist/`** to the web root (or a sub-folder such as `/haul/`).
-3. For AI lines, copy `config.sample.php` to `config.php` **one folder above the web root's `api/` parent**, i.e. next to (not inside) the uploaded `dist` contents, and add your Anthropic key. It must never be inside a public folder. You can instead set the `ANTHROPIC_API_KEY` environment variable.
+3. For AI lines, give the server your Anthropic key in one of these ways (the key must never be in a public folder):
+   - set the `ANTHROPIC_API_KEY` environment variable (best), or
+   - copy `config.sample.php` to **`dvn-haul-config.php` in the folder *above* your web root** (e.g. `/home/you/dvn-haul-config.php` when the site is in `/home/you/public_html`) and add the key, or
+   - for local XAMPP only: `config.php` in the project root.
 4. PHP 7.4+ with cURL is required for `api/chat.php`. `public/.htaccess` (copied into `dist/`) adds compression and caching on Apache.
 
 The game bundle loads only when a player presses Start: landing page ≈ 52 KB gzipped, game logic ≈ 21 KB, Phaser ≈ 340 KB in its own long-cached chunk.

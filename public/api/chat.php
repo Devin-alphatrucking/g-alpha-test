@@ -43,8 +43,11 @@ $_SESSION['hits'] = array_values(array_filter($_SESSION['hits'] ?? [], fn($t) =>
 if (count($_SESSION['hits']) >= 30) { http_response_code(429); echo '{"error":"slow down"}'; exit; }
 $_SESSION['hits'][] = $now;
 
-$cfg = @include __DIR__ . '/../../config.php';
-$key = getenv('ANTHROPIC_API_KEY') ?: ($cfg['ANTHROPIC_API_KEY'] ?? '');
+// Key sources, safest first: environment variable, a file ABOVE the web root, then ../../config.php (local dev).
+$key = getenv('ANTHROPIC_API_KEY') ?: '';
+foreach (array_filter([isset($_SERVER['DOCUMENT_ROOT']) ? dirname($_SERVER['DOCUMENT_ROOT']) . '/dvn-haul-config.php' : null, __DIR__ . '/../../config.php']) as $f) {
+    if ($key === '' && is_readable($f)) { $cfg = include $f; $key = is_array($cfg) ? (string)($cfg['ANTHROPIC_API_KEY'] ?? '') : ''; }
+}
 if (!$key) { http_response_code(503); echo '{"error":"no key"}'; exit; }
 
 // ---- sanitise everything the client sent ----
