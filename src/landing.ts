@@ -2,14 +2,19 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { avatarURL } from './avatars';
 import { audio, setMuted } from './sfx';
+import { STORY } from './story';
+import { SKINS } from './skins';
+import { renderCard } from './share';
+import type { Save } from './state';
 
 gsap.registerPlugin(ScrollTrigger);
-if (import.meta.env.DEV) (window as unknown as { __gsap: typeof gsap }).__gsap = gsap; // dev-only: lets tests fast-forward animations
+if (import.meta.env.DEV) Object.assign(window, { __gsap: gsap, __ST: ScrollTrigger }); // dev-only: lets tests fast-forward animations
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const $$ = <T extends HTMLElement = HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const fine = window.matchMedia('(pointer: fine)').matches;
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /* ---------- returning players ---------- */
 try {
@@ -29,35 +34,7 @@ if (invitedRoom && /^[A-Za-z]{4}$/.test(invitedRoom)) {
   ['#startBtn', '#startBtn2'].forEach((id) => ($(id).textContent = 'Join your friends'));
 }
 
-/* ---------- title: split letters ---------- */
-$$('.title .ln').forEach((ln) => {
-  const text = ln.textContent ?? '';
-  ln.textContent = '';
-  [...text].forEach((c) => {
-    const s = document.createElement('span');
-    s.className = 'ch';
-    s.textContent = c;
-    ln.appendChild(s);
-  });
-});
-
-/* ---------- stars ---------- */
-const stars = (host: HTMLElement, n: number) => {
-  for (let i = 0; i < n; i++) {
-    const s = document.createElement('i');
-    s.className = 'star';
-    s.style.left = `${Math.random() * 100}%`;
-    s.style.top = `${Math.random() * 100}%`;
-    s.style.animationDelay = `${Math.random() * 3}s`;
-    const z = 1 + Math.random() * 1.6;
-    s.style.width = s.style.height = `${z}px`;
-    host.appendChild(s);
-  }
-};
-stars($('#stars-h'), 60);
-stars($('#stars-s'), 110);
-
-/* ---------- character cards ---------- */
+/* ---------- content built from the game's own data ---------- */
 const CAST = [
   { id: 'maple', name: 'Granny Maple', role: 'Baker', quote: "Bless you, dear! Still warm from the oven, and you're early." },
   { id: 'rex', name: 'Rex the Builder', role: 'Foreman', quote: 'Brilliant! Now we can finish the wall before the rain!' },
@@ -67,90 +44,137 @@ const CAST = [
 ];
 $('#cards').innerHTML = CAST.map((c) => `<article class="card"><img alt="" width="96" height="96" src="${avatarURL(c.id, 192)}"><h3>${c.name}</h3><div class="role">${c.role}</div><blockquote>${c.quote}</blockquote></article>`).join('');
 
-/* ---------- entrance ---------- */
-const hero = $('#hero');
-if (!reduced) {
-  gsap.set('.title .ch', { yPercent: 115, rotate: 6 });
-  gsap.set(['.tag', '#startBtn'], { opacity: 0, y: 24 });
-  gsap.set('#truck-h', { xPercent: -170 });
-  gsap.set('#sun', { yPercent: 40, opacity: 0.2 });
-  gsap.set('.layer', { opacity: 0 });
-  const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
-  intro
-    .to('.layer', { opacity: 1, duration: 1.6, stagger: 0.12 }, 0)
-    .to('#sun', { yPercent: 0, opacity: 1, duration: 2.4, ease: 'power2.out' }, 0.1)
-    .to('.title .ch', { yPercent: 0, rotate: 0, duration: 1.1, stagger: 0.07 }, 0.5)
-    .to('#truck-h', { xPercent: -50, duration: 2.6, ease: 'power3.out' }, 0.6)
-    .to('#beam', { opacity: 1, duration: 1.2 }, 2)
-    .to(['.tag', '#startBtn'], { opacity: 1, y: 0, duration: 0.9, stagger: 0.12 }, 1.5);
-  // idle engine bob
-  gsap.to('#truck-h svg', { y: -2.5, duration: 0.11, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-} else {
-  gsap.set('#truck-h', { xPercent: -50 });
-  gsap.set('#beam', { opacity: 1 });
+// the story-scene card: the actual first beat of Granny Maple's arc
+{
+  const beat = STORY.maple[0];
+  ($('#mkFace') as HTMLImageElement).src = avatarURL('maple', 128);
+  $('#mkStory').textContent = `STORY · ${beat.title.toUpperCase()}`;
+  $('#mkText').textContent = beat.lines[0].text;
+  $('#mkChoices').innerHTML = beat.choice.options.map((o, i) => `<span><kbd>${i + 1}</kbd>${esc(o.text)}</span>`).join('');
 }
+$('#swatches').innerHTML = SKINS.map((s) => `<div><span class="chipc" style="background:linear-gradient(${s.trailer[0]},${s.trailer[1]})"><i style="background:${s.stripe}"></i><b style="background:${s.cab[0]}"></b></span>${esc(s.name)}</div>`).join('');
+$('#qlist').innerHTML = [
+  { t: 'Complete 5 deliveries', p: 100, w: '✓', d: true },
+  { t: 'Earn 3 stars 2 times', p: 50, w: '+110', d: false },
+  { t: 'Deliver at night once', p: 0, w: '+120', d: false },
+].map((q) => `<div class="qr${q.d ? ' done' : ''}"><div class="qt">${q.t}</div><div class="qb"><i style="width:${q.p}%"></i></div><div class="qw">${q.w}</div></div>`).join('');
+void (document.fonts?.ready ?? Promise.resolve()).then(() => {
+  const demo: Save = {
+    coins: 0, xp: 700, engine: 0, contract: 0, streak: 5, lastPlayDay: '', deliveries: 42, muted: false, tutorial: true,
+    rel: {
+      maple: { aff: 46, met: 9, fast: 4, late: 0, crashes: 0, rain: 1, night: 2, beats: 2, tags: [] },
+      rex: { aff: 22, met: 5, fast: 2, late: 1, crashes: 0, rain: 0, night: 0, beats: 1, tags: [] },
+      pixel: { aff: 14, met: 4, fast: 1, late: 1, crashes: 0, rain: 0, night: 1, beats: 1, tags: [] },
+      doc: { aff: 31, met: 6, fast: 2, late: 0, crashes: 0, rain: 1, night: 0, beats: 1, tags: [] },
+      cap: { aff: 66, met: 10, fast: 5, late: 0, crashes: 0, rain: 0, night: 1, beats: 3, tags: [] },
+    },
+    keepsakes: [], epilogue: false, paidRooms: [], ageBand: '', skin: 'classic', owned: [], quests: null,
+  };
+  const cv = renderCard(demo);
+  cv.setAttribute('role', 'img');
+  cv.setAttribute('aria-label', 'Example progress card');
+  $('#cardHost').appendChild(cv);
+});
 
-/* ---------- hero parallax: mouse + scroll ---------- */
-if (!reduced && fine) {
-  const layers = $$('#hero .layer');
-  const movers = layers.map((l) => ({ d: Number(l.dataset.d), x: gsap.quickTo(l, 'x', { duration: 0.9, ease: 'power3' }), y: gsap.quickTo(l, 'y', { duration: 0.9, ease: 'power3' }) }));
-  window.addEventListener('pointermove', (e) => {
-    const nx = e.clientX - window.innerWidth / 2;
-    const ny = e.clientY - window.innerHeight / 2;
-    movers.forEach((m) => {
-      m.x(-nx * m.d);
-      m.y(-ny * m.d * 0.6);
-    });
-  });
-  const glow = $('#glow');
-  const gx = gsap.quickTo(glow, 'x', { duration: 0.4, ease: 'power3' });
-  const gy = gsap.quickTo(glow, 'y', { duration: 0.4, ease: 'power3' });
-  window.addEventListener('pointermove', (e) => {
-    glow.style.opacity = '1';
-    gx(e.clientX);
-    gy(e.clientY);
-  });
-  document.addEventListener('pointerleave', () => (glow.style.opacity = '0'));
-}
-if (!reduced) {
-  gsap.to('.hero-copy', { yPercent: -18, opacity: 0.2, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
-  gsap.to('#sun', { yPercent: 55, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
-}
+/* ---------- nav + anchors ---------- */
+const nav = $('#nav');
+const onScroll = () => nav.classList.toggle('solid', window.scrollY > 40);
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+$$<HTMLAnchorElement>('a[href^="#"]').forEach((a) =>
+  a.addEventListener('click', (e) => {
+    const t = document.querySelector(a.getAttribute('href')!) as HTMLElement | null;
+    if (!t) return;
+    e.preventDefault();
+    window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - (t.id === 'world' ? 0 : 64), behavior: reduced ? 'auto' : 'smooth' });
+  }),
+);
 
-/* ---------- the pinned scroll story: the sun sets as you scroll ---------- */
-const clockEl = $('#sclock');
+/* ---------- the one pinned scene ---------- */
 const fmt = (h: number) => `${((Math.floor(h) + 11) % 12) + 1}:${String(Math.floor((h % 1) * 60)).padStart(2, '0')} ${h % 24 < 12 ? 'AM' : 'PM'}`;
-if (!reduced) {
+
+if (reduced) {
+  // no pinning or motion: stacked sections, each with its own still of the game
+  $('#landing').classList.add('reduced');
+  $$('.panel').forEach((p) => p.style.setProperty('--bg', `url(${p.dataset.bg})`));
+} else {
+  const panels = $$('.panel');
+  const dots = $$('#rail i');
+  gsap.set(['#p1', '#p2', '#p3'], { opacity: 0, y: 50 });
+
+  // load-in: headline lines rise, supporting copy follows
+  gsap
+    .timeline({ defaults: { ease: 'power4.out' } })
+    .from('.h1 .ln > span', { yPercent: 115, duration: 1.2, stagger: 0.14 }, 0.1)
+    .from(['.eyebrow', '.sub', '#invite', '.ctas', '.facts'], { opacity: 0, y: 26, duration: 0.9, stagger: 0.1, ease: 'power3.out' }, 0.5)
+    .from('.wclock', { opacity: 0, y: -16, duration: 0.8 }, 0.9)
+    .from('.scroll-cue', { opacity: 0, duration: 0.8 }, 1.4);
+
+  const clock = { h: 14.4 };
+  const setClock = () => {
+    $('#wtime').textContent = fmt(clock.h);
+    $('#wwx').textContent = tl.time() > 6.6 ? 'Rain' : 'Clear';
+  };
   const tl = gsap.timeline({
     defaults: { ease: 'none' },
-    scrollTrigger: { trigger: '#story', start: 'top top', end: '+=3400', scrub: 0.7, pin: true, anticipatePin: 1 },
+    scrollTrigger: {
+      trigger: '#world',
+      start: 'top top',
+      end: '+=4600',
+      scrub: 0.8,
+      pin: true,
+      anticipatePin: 1,
+      onUpdate: () => {
+        const t = tl.time();
+        const idx = t < 1.2 ? 0 : t < 4.0 ? 1 : t < 6.9 ? 2 : 3;
+        panels.forEach((p, i) => p.classList.toggle('on', i === idx));
+        dots.forEach((d, i) => d.classList.toggle('on', i === idx));
+        $('#cue').style.opacity = t > 0.5 ? '0' : '';
+        setClock();
+      },
+    },
   });
-  const clock = { h: 17.2 };
-  tl.fromTo('#truck-s', { x: '-30vw' }, { x: '112vw', duration: 12 }, 0)
-    .to('#far', { x: -120, duration: 12 }, 0)
-    .to('#orb', { y: '48vh', scale: 1.25, duration: 5 }, 0)
-    .to('#sky-dusk', { opacity: 1, duration: 3.2 }, 1.2)
-    .to('#sky-night', { opacity: 1, duration: 3.2 }, 4.4)
-    .to('#stars-s', { opacity: 1, duration: 3 }, 5)
-    .to('#moon', { opacity: 1, y: 0, duration: 4 }, 5.2)
-    .to('#beam-s', { opacity: 1, duration: 1.4 }, 3.2)
-    .to('#srain', { opacity: 0.85, duration: 1.6 }, 4.4)
-    .to('#srain', { opacity: 0, duration: 1.6 }, 9)
-    .to(clock, { h: 22.6, duration: 12, onUpdate: () => (clockEl.textContent = fmt(clock.h)) }, 0);
-  const chapters = ['#ch1', '#ch2', '#ch3'];
-  chapters.forEach((c, i) => {
-    const t = 0.4 + i * 3.9;
-    tl.fromTo(c, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power2.out' }, t);
-    if (i < chapters.length - 1) tl.to(c, { opacity: 0, y: -40, duration: 0.8, ease: 'power2.in' }, t + 3);
-  });
+  // one view, five moments of the same evening, plus a slow push-in
+  tl.fromTo('#shots', { scale: 1.0 }, { scale: 1.12, duration: 10 }, 0)
+    .to('#s-golden', { opacity: 1, duration: 1.4 }, 1.0)
+    .to('#s-dusk', { opacity: 1, duration: 1.4 }, 3.0)
+    .to('#s-night', { opacity: 1, duration: 1.4 }, 4.8)
+    .to('#s-rain', { opacity: 1, duration: 1.4 }, 6.6)
+    .to(clock, { h: 17.3, duration: 1.4 }, 1.0)
+    .to(clock, { h: 19.7, duration: 1.4 }, 3.0)
+    .to(clock, { h: 22.8, duration: 1.4 }, 4.8);
+  const swap = (out: string, inn: string, t: number) => {
+    tl.to(out, { opacity: 0, y: -50, duration: 0.7, ease: 'power2.in' }, t - 0.4).fromTo(inn, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, t);
+  };
+  swap('#p0', '#p1', 1.5);
+  swap('#p1', '#p2', 4.4);
+  swap('#p2', '#p3', 7.2);
+  tl.to({}, { duration: 2.0 }, 8.0); // hold the last panel before the pin releases
+
+  // reveals below the pin
   gsap.from('.card', { opacity: 0, y: 70, rotate: 2, duration: 0.9, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: '#cast .cards', start: 'top 85%' } });
-  gsap.from('#cast h2, #cast .lead', { opacity: 0, y: 50, duration: 0.9, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '#cast', start: 'top 70%' } });
+  gsap.from('#cast .sect-k, #cast h2, #cast .lead', { opacity: 0, y: 50, duration: 0.9, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '#cast', start: 'top 72%' } });
+  gsap.from('#features .sect-k, #features h2, #features .lead', { opacity: 0, y: 50, duration: 0.9, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '#features', start: 'top 72%' } });
+  gsap.from('.feat', { opacity: 0, y: 80, duration: 1, stagger: 0.14, ease: 'power3.out', scrollTrigger: { trigger: '.fgrid', start: 'top 85%' } });
   gsap.from('#finale > div > *', { opacity: 0, y: 50, duration: 0.9, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '#finale', start: 'top 65%' } });
-} else {
-  // reduced motion: static, readable chapters instead of a pinned animation
-  $('#story').style.cssText = 'height:auto;min-height:100svh;padding:120px 0 40px';
-  $$('.chap').forEach((c) => (c.style.cssText = 'position:relative;opacity:1;left:auto;top:auto;margin:0 clamp(20px,6vw,110px) 48px'));
-  $('#truck-s').style.display = 'none';
+
+  if (fine) {
+    const sx = gsap.quickTo('#shots', 'x', { duration: 1.1, ease: 'power3' });
+    const sy = gsap.quickTo('#shots', 'y', { duration: 1.1, ease: 'power3' });
+    window.addEventListener('pointermove', (e) => {
+      sx(-(e.clientX / window.innerWidth - 0.5) * 36);
+      sy(-(e.clientY / window.innerHeight - 0.5) * 24);
+    });
+    const glow = $('#glow');
+    const gx = gsap.quickTo(glow, 'x', { duration: 0.4, ease: 'power3' });
+    const gy = gsap.quickTo(glow, 'y', { duration: 0.4, ease: 'power3' });
+    window.addEventListener('pointermove', (e) => {
+      glow.style.opacity = '1';
+      gx(e.clientX);
+      gy(e.clientY);
+    });
+    document.addEventListener('pointerleave', () => (glow.style.opacity = '0'));
+  }
 }
 
 /* ---------- start: curtain wipe → lazy-load the game → hand over ---------- */

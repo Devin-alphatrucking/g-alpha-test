@@ -33,73 +33,82 @@
       /* ===================== LANDING ===================== */
       #landing { position: relative; background: var(--ink); overflow-x: clip; }
       html.playing #landing { display: none; }
-      .nav { position: fixed; z-index: 30; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(16px, 4vw, 48px); pointer-events: none; }
-      .nav > * { pointer-events: auto; }
+      .nav { position: fixed; z-index: 40; top: 0; left: 0; right: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 16px clamp(16px, 4vw, 48px); pointer-events: none; transition: background .3s, backdrop-filter .3s; }
+      .nav > * { pointer-events: auto; } .nav > .cta { justify-self: end; } .nav > .logo { justify-self: start; }
+      .nav.solid { background: rgba(14,10,30,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
       .logo { display: flex; align-items: center; gap: 10px; font: 700 20px var(--display); letter-spacing: .5px; color: #fff; text-decoration: none; }
       .logo svg { width: 44px; height: 24px; }
-      .cta { font: 600 17px var(--display); color: var(--navy); background: var(--amber); border: 0; border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 0 5px 0 #c78f00, 0 14px 30px rgba(255,194,51,.35); transition: transform .12s, box-shadow .12s; position: relative; }
-      .cta:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #c78f00, 0 18px 36px rgba(255,194,51,.45); }
+      .navlinks { display: flex; gap: 6px; }
+      .navlinks a { color: #fff; opacity: .85; text-decoration: none; font-weight: 500; font-size: 15px; padding: 8px 14px; border-radius: 999px; transition: background .2s, opacity .2s; }
+      .navlinks a:hover { background: rgba(255,255,255,.12); opacity: 1; }
+      .cta { font: 600 17px var(--display); color: var(--navy); background: var(--amber); border: 0; border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 0 5px 0 #c78f00, 0 14px 30px rgba(255,194,51,.3); transition: transform .12s, box-shadow .12s; position: relative; }
+      .cta:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #c78f00, 0 18px 36px rgba(255,194,51,.4); }
       .cta:active { transform: translateY(4px); box-shadow: 0 1px 0 #c78f00; }
       .cta.sm { padding: 10px 20px; font-size: 15px; }
-      .cta.big { font-size: clamp(20px, 2.4vw, 26px); padding: 20px 44px; }
+      .cta.big { font-size: clamp(18px, 1.8vw, 22px); padding: 18px 40px; }
+      .ghostbtn { font: 600 17px var(--display); color: #fff; text-decoration: none; padding: 17px 28px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.4); background: rgba(255,255,255,.06); backdrop-filter: blur(8px); transition: background .2s, border-color .2s; }
+      .ghostbtn:hover { background: rgba(255,255,255,.16); border-color: #fff; }
 
-      #hero { position: relative; height: 100svh; min-height: 600px; overflow: hidden; background: linear-gradient(180deg, #2a1f5e 0%, #6d3a7e 26%, #e8627a 52%, #ff9a5a 72%, #ffd27a 100%); --road: 13vh; }
-      .layer { position: absolute; inset: 0; will-change: transform; }
-      .layer svg { width: 100%; height: 100%; display: block; }
-      #sun { position: absolute; left: 50%; top: 52%; width: min(54vw, 640px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #fff6c9 0 22%, #ffd27a 38%, rgba(255,150,90,.55) 58%, rgba(255,120,90,0) 72%); filter: blur(2px); }
-      #stars-h { position: absolute; inset: 0 0 50% 0; opacity: .55; }
-      .star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; animation: twinkle 3s ease-in-out infinite; }
-      @keyframes twinkle { 50% { opacity: .25; } }
-      .cloud { position: absolute; height: 40px; border-radius: 40px; background: rgba(255,214,200,.28); filter: blur(10px); animation: drift 70s linear infinite; }
-      @keyframes drift { from { transform: translateX(-30vw); } to { transform: translateX(130vw); } }
-      #road { position: absolute; left: 0; right: 0; bottom: 0; height: var(--road); background: linear-gradient(180deg, #2b2438, #1b1626); border-top: 4px solid #3b3350; }
-      #road::before { content: ''; position: absolute; left: 0; right: 0; top: 52%; height: 6px; background: linear-gradient(90deg, #f2c14e 46px, transparent 46px) repeat-x; background-size: 100px 6px; animation: dash .45s linear infinite; }
-      @keyframes dash { to { background-position-x: -100px; } }
-      .truck { position: absolute; left: 50%; bottom: calc(var(--road) - 34px); width: clamp(210px, min(28vw, 36vh), 440px); transform: translateX(-50%); }
-      .truck svg { width: 100%; height: auto; overflow: visible; }
-      .wheel { animation: spin .35s linear infinite; transform-box: fill-box; transform-origin: center; }
-      @keyframes spin { to { transform: rotate(360deg); } }
-      #beam { position: absolute; left: calc(100% - 6px); top: 48%; width: 70vw; height: 90px; transform: translateY(-50%); background: linear-gradient(90deg, rgba(255,240,190,.75), rgba(255,240,190,0)); clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%); opacity: 0; }
-      .hero-copy { position: absolute; left: 0; right: 0; top: clamp(70px, 10vh, 140px); text-align: center; padding: 0 16px; }
-      .title { margin: 0; font: 700 clamp(56px, min(15vw, 17vh), 220px)/.86 var(--display); letter-spacing: -.02em; color: #fff; text-shadow: 0 6px 0 rgba(120,40,70,.35), 0 20px 50px rgba(60,10,60,.35); }
-      .title .ln { display: block; overflow: hidden; padding: .04em .1em .1em; }
-      .title .ch { display: inline-block; will-change: transform; }
-      .title .ln.amber { color: var(--amber); }
-      .tag { margin: 14px auto 20px; max-width: 480px; font-size: clamp(15px, min(2vw, 2.6vh), 21px); color: #fff; opacity: .92; text-shadow: 0 2px 14px rgba(70,10,50,.5); }
-      .invite { display: inline-block; margin: 0 auto 14px; padding: 8px 18px; border-radius: 999px; background: rgba(18,13,36,.55); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(8px); font-weight: 700; color: #fff; }
+      /* ---- the one pinned scene: the real game, one view, one evening ---- */
+      #world { position: relative; height: 100svh; min-height: 620px; }
+      .stage { position: relative; height: 100%; overflow: hidden; background: #1b1530; isolation: isolate; }
+      .shots { position: absolute; inset: -4%; will-change: transform; }
+      .shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% 55%; opacity: 0; }
+      .shot.base { opacity: 1; }
+      .shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(14,10,30,.86) 0%, rgba(14,10,30,.6) 34%, rgba(14,10,30,.12) 66%, rgba(14,10,30,0) 100%), linear-gradient(0deg, rgba(14,10,30,.55) 0%, rgba(14,10,30,0) 30%), linear-gradient(180deg, rgba(14,10,30,.5) 0%, rgba(14,10,30,0) 22%); }
+      .grain { position: absolute; inset: 0; pointer-events: none; opacity: .09; mix-blend-mode: overlay; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+      .wclock { position: absolute; z-index: 5; left: clamp(20px, 6vw, 110px); top: 84px; display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 999px; background: rgba(14,10,30,.55); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(10px); font: 600 15px var(--display); color: #fff; }
+      .wclock .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 4px rgba(255,194,51,.25); }
+      .wclock #wwx { color: var(--teal); }
+      .panel { position: absolute; z-index: 4; left: clamp(20px, 6vw, 110px); right: clamp(20px, 6vw, 110px); top: 0; bottom: 0; align-content: center; display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: clamp(24px, 5vw, 80px); align-items: center; opacity: 0; pointer-events: none; will-change: transform, opacity; }
+      .panel.on { opacity: 1; pointer-events: auto; }
+      .panel .copy { max-width: 560px; }
+      .eyebrow { display: inline-block; margin: 0 0 18px; padding: 7px 16px; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); font: 600 13px var(--display); letter-spacing: .12em; text-transform: uppercase; color: #ffe6a8; }
+      .h1, .h2 { margin: 0; font-family: var(--display); font-weight: 700; letter-spacing: -.02em; color: #fff; text-shadow: 0 6px 40px rgba(0,0,0,.35); }
+      .h1 { font-size: clamp(44px, 6.6vw, 104px); line-height: .96; }
+      .h2 { font-size: clamp(38px, 5vw, 78px); line-height: 1; }
+      .h1 .ln { display: block; overflow: hidden; padding: .04em .06em .1em; margin: 0 -.06em; }
+      .h1 .ln > span { display: inline-block; will-change: transform; }
+      .amber { color: var(--amber); }
+      .sub { margin: 22px 0 28px; font-size: clamp(16px, 1.45vw, 20px); line-height: 1.55; color: #fff; opacity: .92; max-width: 500px; }
+      .ctas { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+      .facts { display: flex; gap: 22px; flex-wrap: wrap; margin: 26px 0 0; padding: 0; list-style: none; font-size: 14px; color: #ffe6a8; font-weight: 500; }
+      .facts li::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--teal); margin-right: 8px; vertical-align: middle; }
+      .invite { display: inline-block; margin: 0 0 16px; padding: 8px 18px; border-radius: 999px; background: rgba(46,230,197,.16); border: 1px solid rgba(46,230,197,.5); font-weight: 700; color: #fff; }
       .invite[hidden] { display: none; }
       .invite b { color: var(--amber); letter-spacing: .2em; }
-      .scroll-cue { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2; font-size: 12px; letter-spacing: .25em; text-transform: uppercase; color: #fff; opacity: .75; display: none; white-space: nowrap; }
-      @media (max-width: 640px) { .scroll-cue { font-size: 10px; letter-spacing: .18em; } }
-      @media (min-height: 760px) { .scroll-cue { display: block; } }
+      .chnum { font: 600 14px var(--display); letter-spacing: .3em; color: var(--amber); text-transform: uppercase; margin-bottom: 12px; }
+      .panel .lead { margin: 18px 0 0; font-size: clamp(16px, 1.45vw, 20px); line-height: 1.55; color: #fff; opacity: .92; max-width: 480px; }
+      .rail { position: absolute; z-index: 5; right: clamp(14px, 2.4vw, 34px); top: 50%; transform: translateY(-50%); display: grid; gap: 10px; }
+      .rail i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.35); transition: background .3s, transform .3s; }
+      .rail i.on { background: var(--amber); transform: scale(1.5); }
+      .scroll-cue { position: absolute; z-index: 5; left: clamp(20px, 6vw, 110px); bottom: 26px; display: flex; align-items: center; gap: 12px; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: #fff; opacity: .8; }
+      .scroll-cue i { width: 1px; height: 34px; background: linear-gradient(#fff, transparent); animation: cue 1.8s ease-in-out infinite; transform-origin: top; }
+      @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
 
-      /* ---------- scroll story ---------- */
-      #story { position: relative; height: 100svh; overflow: hidden; background: #ff9a5a; --road: 15vh; }
-      .sky { position: absolute; inset: 0; }
-      #sky-day { background: linear-gradient(180deg, #6d3a7e 0%, #e8627a 45%, #ff9a5a 72%, #ffd27a 100%); }
-      #sky-dusk { background: linear-gradient(180deg, #1f1b4d 0%, #5a3a8a 45%, #c8587a 78%, #ff9a6a 100%); opacity: 0; }
-      #sky-night { background: linear-gradient(180deg, #060a1f 0%, #0d1740 55%, #1b2a5e 100%); opacity: 0; }
-      #stars-s { position: absolute; inset: 0 0 40% 0; opacity: 0; }
-      #orb { position: absolute; left: 68%; top: 42%; width: min(24vw, 260px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #fff6c9 0 30%, #ffd27a 55%, rgba(255,150,90,0) 72%); }
-      #moon { position: absolute; left: 70%; top: 16%; width: min(11vw, 120px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff 0, #dfe6ff 45%, #aab6e8 100%); box-shadow: 0 0 60px 18px rgba(170,190,255,.35); opacity: 0; transform: translateY(40vh); }
-      #hills-s { position: absolute; inset: 0; }
-      #road-s { position: absolute; left: 0; right: 0; bottom: 0; height: var(--road); background: linear-gradient(180deg, #2b2438, #15111f); border-top: 4px solid #3b3350; }
-      #road-s::before { content: ''; position: absolute; left: 0; right: 0; top: 52%; height: 6px; background: linear-gradient(90deg, #f2c14e 46px, transparent 46px) repeat-x; background-size: 100px 6px; animation: dash .45s linear infinite; }
-      #truck-s { position: absolute; left: 0; bottom: calc(var(--road) - 34px); width: clamp(220px, 26vw, 400px); }
-      #truck-s svg { width: 100%; height: auto; overflow: visible; }
-      #beam-s { position: absolute; left: calc(100% - 6px); top: 48%; width: 60vw; height: 90px; transform: translateY(-50%); background: linear-gradient(90deg, rgba(255,240,190,.8), rgba(255,240,190,0)); clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%); opacity: 0; }
-      #srain { position: absolute; inset: 0; opacity: 0; background: repeating-linear-gradient(105deg, transparent 0 9px, rgba(200,220,255,.32) 9px 10px); background-size: 240px 240px; animation: rainmove .35s linear infinite; }
-      @keyframes rainmove { to { background-position: -60px 240px; } }
-      .chap { position: absolute; left: clamp(20px, 6vw, 110px); top: 17vh; max-width: min(600px, 88vw); opacity: 0; will-change: transform, opacity; }
-      .chap .n { font: 600 14px var(--display); letter-spacing: .3em; color: var(--amber); text-transform: uppercase; }
-      .chap h2 { margin: 8px 0 14px; font: 700 clamp(38px, 6.4vw, 92px)/.98 var(--display); letter-spacing: -.01em; text-shadow: 0 8px 40px rgba(0,0,0,.35); }
-      .chap p { margin: 0; font-size: clamp(16px, 1.7vw, 20px); color: #fff; opacity: .9; max-width: 460px; text-shadow: 0 2px 14px rgba(0,0,0,.4); }
-      #sclock { position: absolute; right: clamp(16px, 4vw, 48px); top: 92px; font: 600 22px var(--display); padding: 8px 18px; border-radius: 999px; background: rgba(18,13,36,.45); backdrop-filter: blur(8px); border: 1px solid var(--line); }
+      /* real UI re-created as static cards (same data and styles as the game) */
+      .mock { position: relative; justify-self: end; width: min(460px, 100%); padding: 20px; border-radius: 24px; background: rgba(18,26,51,.94); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.16); box-shadow: 0 30px 80px rgba(0,0,0,.45); font-family: var(--display); color: var(--text); transform: perspective(1200px) rotateY(-7deg) rotateX(2deg); }
+      .mock .k { font-size: 12px; letter-spacing: .22em; color: var(--amber); font-weight: 600; }
+      .dg { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: start; }
+      .dg img { width: 64px; height: 64px; border-radius: 50%; }
+      .dg .nm { font-weight: 700; font-size: 18px; margin-top: 2px; } .dg .tx { font-size: 17px; line-height: 1.4; margin-top: 4px; font-weight: 500; }
+      .dg .ch { grid-column: 1 / -1; display: grid; gap: 8px; margin-top: 4px; }
+      .dg .ch span { font-weight: 600; font-size: 15px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 11px 14px; } .dg .ch span:first-child { border-color: rgba(255,194,51,.6); background: rgba(255,194,51,.14); }
+      .dg .ch kbd { display: inline-block; min-width: 22px; margin-right: 6px; padding: 0 5px; border-radius: 6px; background: rgba(255,255,255,.15); border-bottom: 2px solid rgba(255,255,255,.25); font-family: inherit; font-size: 13px; }
+      .rm .code { font-weight: 700; font-size: 50px; letter-spacing: .22em; text-align: center; color: var(--amber); padding-left: .22em; margin: 4px 0 8px; }
+      .rm .row { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,.07); font-size: 14px; margin-top: 6px; } .rm .row.me { background: rgba(46,230,197,.16); } .rm .row b { color: var(--amber); }
+      .rm .bar { height: 8px; border-radius: 6px; background: rgba(255,255,255,.14); overflow: hidden; margin: 8px 0 12px; } .rm .bar i { display: block; height: 100%; width: 65%; background: linear-gradient(90deg, var(--teal), var(--amber)); border-radius: 6px; }
+      .rm .emo { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; } .rm .emo span { font-size: 12px; font-weight: 600; padding: 7px 11px; border-radius: 12px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); }
+      .rm .bonus { font-size: 13px; color: var(--muted); margin-top: 8px; } .rm .bonus b { color: var(--text); }
+      .chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+      .chips span { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; background: rgba(14,10,30,.6); border: 1px solid rgba(255,255,255,.2); font: 600 14px var(--display); backdrop-filter: blur(8px); }
+      .chips span::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--amber)); }
 
       /* ---------- cast ---------- */
-      #cast { position: relative; padding: clamp(80px, 14vw, 170px) clamp(16px, 5vw, 80px); background: linear-gradient(180deg, #1b2a5e 0%, #120d24 22%); }
-      #cast h2, #finale h2 { margin: 0; font: 700 clamp(40px, 7vw, 100px)/.95 var(--display); letter-spacing: -.015em; }
-      #cast .lead { max-width: 560px; color: var(--muted); font-size: clamp(16px, 1.7vw, 20px); margin: 18px 0 clamp(36px, 5vw, 64px); }
+      #cast { position: relative; padding: clamp(80px, 12vw, 160px) clamp(16px, 5vw, 80px) clamp(60px, 8vw, 110px); background: #120d24; }
+      .sect-k { font: 600 14px var(--display); letter-spacing: .3em; color: var(--amber); text-transform: uppercase; margin-bottom: 14px; }
+      #cast h2, #features h2, #finale h2 { margin: 0; font: 700 clamp(38px, 6vw, 88px)/.98 var(--display); letter-spacing: -.02em; }
+      #cast .lead, #features .lead { max-width: 580px; color: var(--muted); font-size: clamp(16px, 1.6vw, 20px); line-height: 1.55; margin: 18px 0 clamp(34px, 5vw, 60px); }
       .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; }
       .card { position: relative; border-radius: 28px; padding: 22px; background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border: 1px solid var(--line); transition: transform .3s cubic-bezier(.2,1.2,.4,1), border-color .3s; will-change: transform; }
       .card:hover { transform: translateY(-8px) rotate(-1.2deg); border-color: rgba(255,194,51,.55); }
@@ -108,12 +117,45 @@
       .card .role { font-size: 13px; color: var(--amber); letter-spacing: .08em; text-transform: uppercase; }
       .card blockquote { margin: 14px 0 0; padding: 12px 14px; border-radius: 16px 16px 16px 4px; background: rgba(255,255,255,.09); font-size: 15px; line-height: 1.4; color: #eef; }
 
-      #finale { position: relative; min-height: 90svh; display: grid; place-items: center; text-align: center; padding: 120px 20px 80px; background: radial-gradient(ellipse at 50% 110%, #ff9a5a 0%, #7a3a7e 38%, #120d24 72%); overflow: hidden; }
-      #finale p { color: #fff; opacity: .85; margin: 18px auto 34px; max-width: 460px; font-size: clamp(16px, 1.8vw, 20px); }
+      /* ---------- features ---------- */
+      #features { position: relative; padding: clamp(40px, 6vw, 90px) clamp(16px, 5vw, 80px) clamp(80px, 10vw, 140px); background: linear-gradient(180deg, #120d24, #1a1238 60%, #120d24); }
+      .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: clamp(18px, 2.4vw, 34px); align-items: start; }
+      .feat { padding: 22px; border-radius: 28px; background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.025)); border: 1px solid var(--line); }
+      .feat h3 { margin: 0 0 4px; font: 700 26px var(--display); } .feat p { margin: 0 0 18px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+      .sw8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+      .sw8 div { font: 600 11px var(--display); color: var(--muted); text-align: center; }
+      .sw8 .chipc { display: block; position: relative; height: 30px; border-radius: 9px; overflow: hidden; margin-bottom: 6px; box-shadow: 0 6px 16px rgba(0,0,0,.3); }
+      .sw8 .chipc i { position: absolute; left: 0; right: 30%; top: 12px; height: 6px; } .sw8 .chipc b { position: absolute; right: 0; top: 0; bottom: 0; width: 30%; }
+      .qlist .qr { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--line); align-items: center; font-family: var(--display); }
+      .qlist .qr:first-child { border-top: 0; } .qlist .qt { font-weight: 600; font-size: 16px; } .qlist .qr.done .qt { color: var(--teal); text-decoration: line-through; text-decoration-thickness: 1px; }
+      .qlist .qb { grid-column: 1; height: 8px; border-radius: 6px; background: rgba(255,255,255,.14); overflow: hidden; } .qlist .qb i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--amber)); border-radius: 6px; }
+      .qlist .qw { grid-column: 2; grid-row: 1 / span 2; font-weight: 700; color: var(--amber); font-size: 18px; }
+      .feat canvas { width: 100%; height: auto; border-radius: 18px; display: block; box-shadow: 0 18px 50px rgba(0,0,0,.4); }
+
+      #finale { position: relative; min-height: 80svh; display: grid; place-items: center; text-align: center; padding: 120px 20px 90px; background: radial-gradient(ellipse at 50% 120%, rgba(255,154,90,.55) 0%, rgba(122,58,126,.4) 40%, #120d24 72%); overflow: hidden; }
+      #finale p { color: #fff; opacity: .88; margin: 18px auto 34px; max-width: 460px; font-size: clamp(16px, 1.8vw, 20px); line-height: 1.5; }
       #finale small { display: block; margin-top: 22px; color: #e8dcff; opacity: .75; font-size: 14px; }
       footer.foot { padding: 26px 20px 34px; text-align: center; font-size: 13px; color: var(--muted); background: #0b0818; }
-      #glow { position: fixed; left: 0; top: 0; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; background: radial-gradient(circle, rgba(255,194,51,.22), rgba(255,194,51,0) 65%); pointer-events: none; z-index: 25; mix-blend-mode: screen; opacity: 0; transition: opacity .3s; }
+      #glow { position: fixed; left: 0; top: 0; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; background: radial-gradient(circle, rgba(255,194,51,.2), rgba(255,194,51,0) 65%); pointer-events: none; z-index: 25; mix-blend-mode: screen; opacity: 0; transition: opacity .3s; }
       @media (pointer: coarse) { #glow { display: none; } }
+
+      @media (max-width: 900px) {
+        .nav { grid-template-columns: 1fr auto; } .navlinks { display: none; }
+        .panel { top: auto; bottom: 64px; align-content: end; grid-template-columns: 1fr; }
+        .mock { display: none; }
+        .shade { background: linear-gradient(0deg, rgba(14,10,30,.95) 0%, rgba(14,10,30,.78) 42%, rgba(14,10,30,.1) 78%), linear-gradient(180deg, rgba(14,10,30,.5) 0%, rgba(14,10,30,0) 20%); }
+        .shot { object-position: 68% 70%; }
+        .h1 { font-size: clamp(40px, 11vw, 64px); } .h2 { font-size: clamp(34px, 9.5vw, 54px); }
+        .wclock { top: 76px; } .rail { display: none; }
+        .facts { gap: 14px; font-size: 13px; }
+        .scroll-cue { bottom: 20px; }
+      }
+      @media (max-height: 700px) and (min-width: 901px) { .h1 { font-size: clamp(40px, 7vh, 80px); } .sub { margin: 14px 0 20px; } .facts { margin-top: 16px; } }
+      .reduced #world { height: auto; }
+      .reduced .stage { height: auto; overflow: visible; background: none; }
+      .reduced .shots, .reduced .shade, .reduced .grain, .reduced .wclock, .reduced .rail, .reduced .scroll-cue { display: none; }
+      .reduced .panel { position: relative; top: auto; bottom: auto; left: auto; right: auto; opacity: 1; min-height: 100svh; padding: 110px clamp(20px, 6vw, 110px) 60px; align-content: center; background: var(--bg) center / cover; pointer-events: auto; isolation: isolate; }
+      .reduced .panel::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(14,10,30,.88), rgba(14,10,30,.4)); }
 
       /* transition curtain */
       #curtain { position: fixed; inset: 0; z-index: 300; background: radial-gradient(circle at 50% 50%, #ffd27a, #ffc233 60%); clip-path: circle(0 at 50% 50%); pointer-events: none; display: grid; place-items: center; }
@@ -324,88 +366,110 @@
           <path d="M68 20h22l14 12v16H68z" fill="#1b2547"/><path d="M78 24h10l9 9H78z" fill="#8fd3ff"/>
           <circle cx="22" cy="50" r="8" fill="#161b30"/><circle cx="52" cy="50" r="8" fill="#161b30"/><circle cx="90" cy="50" r="8" fill="#161b30"/>
         </symbol>
-        <symbol id="truck-side" viewBox="0 0 330 140">
-          <defs>
-            <linearGradient id="tr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#cfd6ea"/></linearGradient>
-            <linearGradient id="cab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4f8c"/><stop offset="1" stop-color="#1f2c54"/></linearGradient>
-          </defs>
-          <ellipse cx="165" cy="128" rx="160" ry="8" fill="#000" opacity=".35"/>
-          <rect x="4" y="12" width="214" height="86" rx="10" fill="url(#tr)"/>
-          <rect x="4" y="54" width="214" height="13" fill="#ffc233"/>
-          <text x="111" y="42" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="700" font-size="28" fill="#1b2547">DVN HAUL</text>
-          <text x="111" y="86" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="500" font-size="12" letter-spacing="3" fill="#56608a">ALPHA TRUCKING</text>
-          <path d="M224 34h44q14 0 24 14l24 22q6 6 6 14v14H224z" fill="url(#cab)"/>
-          <path d="M236 42h30q8 0 14 8l14 16h-58z" fill="#8fd3ff"/><path d="M240 44h14l-12 22h-6z" fill="#fff" opacity=".35"/>
-          <rect x="4" y="94" width="318" height="12" rx="4" fill="#161b30"/>
-          <circle cx="322" cy="86" r="6" fill="#ffe08a"/>
-          <g class="wheel"><circle cx="58" cy="108" r="19" fill="#161b30"/><circle cx="58" cy="108" r="8" fill="#9aa3c2"/><path d="M58 100v16M50 108h16" stroke="#161b30" stroke-width="3"/></g>
-          <g class="wheel"><circle cx="112" cy="108" r="19" fill="#161b30"/><circle cx="112" cy="108" r="8" fill="#9aa3c2"/><path d="M112 100v16M104 108h16" stroke="#161b30" stroke-width="3"/></g>
-          <g class="wheel"><circle cx="266" cy="108" r="19" fill="#161b30"/><circle cx="266" cy="108" r="8" fill="#9aa3c2"/><path d="M266 100v16M258 108h16" stroke="#161b30" stroke-width="3"/></g>
-        </symbol>
       </defs>
     </svg>
 
     <!-- ===================== LANDING ===================== -->
     <div id="landing">
       <div id="glow"></div>
-      <header class="nav">
-        <a class="logo" href="#hero" aria-label="DVN Haul home"><svg aria-hidden="true"><use href="#logo"/></svg>DVN HAUL</a>
+      <header class="nav" id="nav">
+        <a class="logo" href="#world" aria-label="DVN Haul home"><svg aria-hidden="true"><use href="#logo"/></svg>DVN HAUL</a>
+        <nav class="navlinks" aria-label="Sections"><a href="#cast">The locals</a><a href="#features">Features</a></nav>
         <button class="cta sm" data-start>Play now</button>
       </header>
 
       <main>
-        <section id="hero" aria-label="DVN Haul">
-          <div class="layer" data-d="0.01"><div id="sun"></div><div id="stars-h"></div></div>
-          <div class="layer" data-d="0.015" aria-hidden="true"><div class="cloud" style="top:16%;width:260px;animation-delay:-10s"></div><div class="cloud" style="top:30%;width:340px;animation-delay:-38s"></div><div class="cloud" style="top:9%;width:200px;animation-delay:-55s"></div></div>
-          <div class="layer" data-d="0.025" aria-hidden="true">
-            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice"><path d="M0 560L110 470 220 540 360 430 500 540 650 450 790 550 940 440 1100 545 1250 455 1440 540V800H0Z" fill="#8a3f78" opacity=".75"/></svg>
-          </div>
-          <div class="layer" data-d="0.045" aria-hidden="true">
-            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice"><path d="M0 610Q200 520 420 590T860 585T1240 570T1440 590V800H0Z" fill="#6a2f66"/></svg>
-          </div>
-          <div class="layer" data-d="0.075" aria-hidden="true">
-            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice"><path d="M0 660Q260 600 520 650T1000 640T1440 650V800H0Z" fill="#3d1f4a"/>
-              <g fill="#26123a"><path d="M130 690v-90M130 650l-26-26M130 640l22-20" stroke="#26123a" stroke-width="6" fill="none"/><circle cx="130" cy="585" r="36"/><circle cx="104" cy="610" r="22"/><circle cx="158" cy="606" r="24"/>
-              <path d="M1290 700v-110" stroke="#26123a" stroke-width="7" fill="none"/><circle cx="1290" cy="570" r="42"/><circle cx="1260" cy="600" r="24"/><circle cx="1322" cy="598" r="26"/></g>
-              <g stroke="#26123a" stroke-width="5" fill="none"><path d="M440 700V560M410 580h60M720 700V572M690 592h60"/><path d="M440 570Q580 610 720 582" stroke-width="2"/></g></svg>
-          </div>
-          <div id="road"></div>
-          <div class="truck" id="truck-h"><div id="beam"></div><svg viewBox="0 0 330 140" role="img" aria-label="DVN Haul truck"><use href="#truck-side"/></svg></div>
-          <div class="hero-copy">
-            <h1 class="title" aria-label="DVN Haul"><span class="ln" aria-hidden="true">DVN</span><span class="ln amber" aria-hidden="true">HAUL</span></h1>
-            <p class="tag">A cozy delivery game for every age. Chase the sunset, beat the storm, and win over a town that remembers you.</p>
-            <p class="invite" id="invite" hidden></p>
-            <button class="cta big" data-start id="startBtn">Start the engine</button>
-          </div>
-          <div class="scroll-cue" aria-hidden="true">Scroll to see the night shift</div>
-        </section>
+        <!-- ONE pinned scene: the real game, one view. Scrolling moves the clock from afternoon to a stormy night. -->
+        <section id="world" aria-label="DVN Haul">
+          <div class="stage">
+            <div class="shots" id="shots" aria-hidden="true">
+              <img class="shot base" id="s-day" src="./shots/world-day.webp" alt="" width="1920" height="1200" fetchpriority="high" decoding="async" />
+              <img class="shot" id="s-golden" src="./shots/world-golden.webp" alt="" width="1920" height="1200" decoding="async" />
+              <img class="shot" id="s-dusk" src="./shots/world-dusk.webp" alt="" width="1920" height="1200" decoding="async" />
+              <img class="shot" id="s-night" src="./shots/world-night.webp" alt="" width="1920" height="1200" decoding="async" />
+              <img class="shot" id="s-rain" src="./shots/world-rain.webp" alt="" width="1920" height="1200" decoding="async" />
+            </div>
+            <div class="shade" aria-hidden="true"></div>
+            <div class="grain" aria-hidden="true"></div>
+            <div class="wclock" id="wclock" aria-hidden="true"><span class="dot"></span><span id="wtime">1:30 PM</span><span id="wwx">Clear</span></div>
 
-        <section id="story" aria-label="The journey">
-          <div class="sky" id="sky-day"></div><div class="sky" id="sky-dusk"></div><div class="sky" id="sky-night"></div>
-          <div id="stars-s"></div>
-          <div id="orb"></div><div id="moon"></div>
-          <div id="hills-s" aria-hidden="true">
-            <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice" style="width:120%;height:100%;margin-left:-10%"><path id="far" d="M0 560L110 470 220 540 360 430 500 540 650 450 790 550 940 440 1100 545 1250 455 1440 540V800H0Z" fill="#2d1d58" opacity=".85"/><path d="M0 650Q260 590 520 640T1000 630T1440 640V800H0Z" fill="#190f33"/></svg>
+            <article class="panel on" id="p0" data-bg="./shots/world-day.webp">
+              <div class="copy">
+                <p class="eyebrow">A cozy driving game · free in your browser</p>
+                <h1 class="h1" aria-label="Deliver the town. Win its heart."><span class="ln"><span>Deliver the town.</span></span><span class="ln"><span class="amber">Win its heart.</span></span></h1>
+                <p class="sub">Drive your truck through a living town, from sunny afternoon to stormy night. Every neighbour remembers how you drive.</p>
+                <p class="invite" id="invite" hidden></p>
+                <div class="ctas"><button class="cta big" data-start id="startBtn">Start the engine</button><a class="ghostbtn" href="#features">See what's inside</a></div>
+                <ul class="facts"><li>No download</li><li>Phone &amp; laptop</li><li>All ages</li></ul>
+              </div>
+            </article>
+
+            <article class="panel" id="p1" data-bg="./shots/world-golden.webp">
+              <div class="copy">
+                <div class="chnum">01 · The town</div>
+                <h2 class="h2">A town that <span class="amber">remembers</span> you.</h2>
+                <p class="lead">Five neighbours with their own stories. Deliver on time, drive carefully, and they'll notice. Late runs, rainy deliveries, even your choices: it all comes back in what they say.</p>
+              </div>
+              <div class="mock" aria-label="Example of a story scene from the game">
+                <div class="k" id="mkStory">STORY</div>
+                <div class="dg"><img id="mkFace" alt="" /><div><div class="nm">Granny Maple</div><div class="tx" id="mkText"></div></div><div class="ch" id="mkChoices"></div></div>
+              </div>
+            </article>
+
+            <article class="panel" id="p2" data-bg="./shots/world-rain.webp">
+              <div class="copy">
+                <div class="chnum">02 · The drive</div>
+                <h2 class="h2">Beat the clock.<br /><span class="amber">Beat the storm.</span></h2>
+                <p class="lead">The day really passes. Lamps come on at dusk, rain slicks the road, buses stop for passengers and people cross at the zebra. Stay on the road, mind the traffic and chase three stars.</p>
+                <div class="chips"><span style="--c:#ffc233">Golden hour</span><span style="--c:#9484bf">Dusk</span><span style="--c:#2ee6c5">Night shift</span><span style="--c:#74c0fc">Storms</span></div>
+              </div>
+            </article>
+
+            <article class="panel" id="p3" data-bg="./shots/world-night.webp">
+              <div class="copy">
+                <div class="chnum">03 · Together</div>
+                <h2 class="h2">Drive it <span class="amber">together.</span></h2>
+                <p class="lead">Make a private room, send the link, and cruise as a convoy of up to six. Share a team goal, earn convoy bonuses, and say hi with quick emotes. No open chat, so it's safe for everyone.</p>
+              </div>
+              <div class="mock rm" aria-label="Example of a play room">
+                <div class="k">PLAY ROOM · EXAMPLE</div>
+                <div class="code" aria-hidden="true">DVNX</div>
+                <div class="bar"><i></i></div>
+                <div class="bonus"><b>Convoy goal:</b> 13 of 20 deliveries together · <b>Bonus:</b> +20% coins</div>
+                <div class="row me"><span>Happy Quokka 42 (you)</span><b>5</b></div>
+                <div class="row"><span>Brave Emu 17</span><b>4</b></div>
+                <div class="row"><span>Zippy Koala 80</span><b>4</b></div>
+                <div class="emo"><span>Hi!</span><span>GG!</span><span>Wait for me!</span><span>Thanks!</span><span>Let's go!</span></div>
+              </div>
+            </article>
+
+            <div class="rail" id="rail" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+            <div class="scroll-cue" id="cue" aria-hidden="true"><i></i>Scroll to watch the day pass</div>
           </div>
-          <div id="srain"></div>
-          <div id="road-s"></div>
-          <div id="truck-s"><div id="beam-s"></div><svg viewBox="0 0 330 140" aria-hidden="true"><use href="#truck-side"/></svg></div>
-          <div id="sclock" aria-hidden="true">5:12 PM</div>
-          <article class="chap" id="ch1"><div class="n">Chapter 01</div><h2>A town that remembers you.</h2><p>Every customer has a story. Deliver on time and they'll tell you more, and they won't forget.</p></article>
-          <article class="chap" id="ch2"><div class="n">Chapter 02</div><h2>Beat the clock. Beat the storm.</h2><p>Day turns to dusk. Rain slicks the road. Your headlights are the only thing between you and the three-star run.</p></article>
-          <article class="chap" id="ch3"><div class="n">Chapter 03</div><h2>Build the legend.</h2><p>Upgrade your rig, chain combos, keep the daily streak alive. Easy to start. Hard to put down.</p></article>
         </section>
 
         <section id="cast" aria-label="The locals">
-          <h2>Meet the locals.</h2>
-          <p class="lead">Five neighbours, five personalities. Each reacts to the way you drive, powered by AI so no two deliveries sound the same.</p>
+          <div class="sect-k">The locals</div>
+          <h2>Meet the neighbours.</h2>
+          <p class="lead">Five personalities, fifteen small stories. Each one reacts to the way you drive, and AI keeps every delivery sounding different.</p>
           <div class="cards" id="cards"></div>
+        </section>
+
+        <section id="features" aria-label="Features">
+          <div class="sect-k">Inside the game</div>
+          <h2>Built to come back to.</h2>
+          <p class="lead">Everything below is straight from the game: the real paints, the real quests and the card you can share.</p>
+          <div class="fgrid">
+            <article class="feat"><h3>Make it yours</h3><p>Eight paint jobs. Buy two with coins, unlock five by finishing a neighbour's story.</p><div class="sw8" id="swatches"></div></article>
+            <article class="feat"><h3>A reason to return</h3><p>Three fresh goals every day, plus a streak bonus for turning up.</p><div class="qlist" id="qlist"></div></article>
+            <article class="feat"><h3>Show it off</h3><p>One tap makes a card of your level, chapter and friendships. Stats only, no personal data.</p><div id="cardHost"></div></article>
+          </div>
         </section>
 
         <section id="finale" aria-label="Play">
           <div>
             <h2>The road<br />is waiting.</h2>
-            <p>Free in your browser. No download. Works on desktop, tablet and phone.</p>
+            <p>Free in your browser. No download, no sign-up. Works on desktop, tablet and phone.</p>
             <button class="cta big" data-start id="startBtn2">Start the engine</button>
             <small>Drive with arrow keys or WASD · on-screen controls on touch</small>
           </div>

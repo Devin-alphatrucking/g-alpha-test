@@ -103,3 +103,7 @@ DVN Haul ships with **no ads**. To enable optional *rewarded* ads ("watch an ad:
 - Before turning ads on you still need to: publish a privacy policy, tell the ad network the site may have child users and use its child-directed / non-personalised setting for the under-13 band, add `ads.txt` at the site root, and check current children's online privacy rules for your countries (e.g. COPPA in the US, the Australian Privacy Act and its Children's Online Privacy Code). This is not legal advice.
 
 Other ways the project can earn, none built yet: a sponsored branded paint or customer from Alpha Trucking or a partner, a "Book a delivery" link on the landing page, or cosmetic purchases (adds payment and child-safety complexity, so plan it carefully).
+
+## Landing page images
+
+`public/shots/world-*.webp` are **real captures of the game** (the same view at 2:00 PM, golden hour, dusk, night and rainy night, 1920x1200). The landing page cross-fades between them as you scroll. To refresh them after art changes, run the game at 1920x1200, freeze the traffic in one scene, set the time of day and weather, and export the Phaser canvas for each frame (`canvas.toDataURL('image/webp', 0.84)`); for the rain frame also draw the `#rain` overlay canvas on top.
