@@ -92,9 +92,9 @@
       .navlinks { display: flex; gap: 6px; }
       .navlinks a { color: #fff; opacity: .85; text-decoration: none; font-weight: 500; font-size: 15px; padding: 8px 14px; border-radius: 999px; transition: background .2s, opacity .2s; }
       .navlinks a:hover { background: rgba(255,255,255,.12); opacity: 1; }
-      .cta { font: 600 17px var(--display); color: var(--navy); background: var(--amber); border: 0; border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 0 5px 0 #c78f00, 0 14px 30px rgba(255,194,51,.3); transition: transform .12s, box-shadow .12s; position: relative; }
-      .cta:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #c78f00, 0 18px 36px rgba(255,194,51,.4); }
-      .cta:active { transform: translateY(4px); box-shadow: 0 1px 0 #c78f00; }
+      .cta { font: 600 17px var(--display); color: var(--navy); background: var(--amber); border: 0; border-radius: 999px; padding: 14px 28px; cursor: pointer; box-shadow: 0 5px 0 #c78f00, 0 14px 30px rgba(255,194,51,.3); transition: translate .12s, box-shadow .12s; position: relative; }
+      .cta:hover { translate: 0 -2px; box-shadow: 0 7px 0 #c78f00, 0 18px 36px rgba(255,194,51,.4); }
+      .cta:active { translate: 0 4px; box-shadow: 0 1px 0 #c78f00; }
       .cta.sm { padding: 10px 20px; font-size: 15px; }
       .cta.big { font-size: clamp(18px, 1.8vw, 22px); padding: 18px 40px; }
       .ghostbtn { font: 600 17px var(--display); color: #fff; text-decoration: none; padding: 17px 28px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.4); background: rgba(255,255,255,.06); backdrop-filter: blur(8px); transition: background .2s, border-color .2s; }
@@ -161,8 +161,8 @@
       #cast h2, #features h2, #finale h2 { margin: 0; font: 700 clamp(38px, 6vw, 88px)/.98 var(--display); letter-spacing: -.02em; }
       #cast .lead, #features .lead { max-width: 580px; color: var(--muted); font-size: clamp(16px, 1.6vw, 20px); line-height: 1.55; margin: 18px 0 clamp(34px, 5vw, 60px); }
       .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; }
-      .card { position: relative; border-radius: 28px; padding: 22px; background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border: 1px solid var(--line); transition: transform .3s cubic-bezier(.2,1.2,.4,1), border-color .3s; will-change: transform; }
-      .card:hover { transform: translateY(-8px) rotate(-1.2deg); border-color: rgba(255,194,51,.55); }
+      .card { position: relative; border-radius: 28px; padding: 22px; background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border: 1px solid var(--line); transition: translate .3s cubic-bezier(.2,1.2,.4,1), rotate .3s cubic-bezier(.2,1.2,.4,1), border-color .3s; will-change: transform; }
+      .card:hover { translate: 0 -8px; rotate: -1.2deg; border-color: rgba(255,194,51,.55); }
       .card img { width: 96px; height: 96px; border-radius: 50%; display: block; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
       .card h3 { margin: 16px 0 2px; font: 600 22px var(--display); }
       .card .role { font-size: 13px; color: var(--amber); letter-spacing: .08em; text-transform: uppercase; }
@@ -185,7 +185,7 @@
 
       #finale { position: relative; min-height: 80svh; display: grid; place-items: center; text-align: center; padding: 120px 20px 90px; background: radial-gradient(ellipse at 50% 120%, rgba(255,154,90,.55) 0%, rgba(122,58,126,.4) 40%, #120d24 72%); overflow: hidden; }
       #finale p { color: #fff; opacity: .88; margin: 18px auto 34px; max-width: 460px; font-size: clamp(16px, 1.8vw, 20px); line-height: 1.5; }
-      #finale small { display: block; margin-top: 22px; color: #e8dcff; opacity: .75; font-size: 14px; }
+      #finale small { display: block; clear: both; margin-top: 28px; line-height: 1.5; color: #e8dcff; opacity: .75; font-size: 14px; }
       footer.foot { padding: 28px 20px 36px; text-align: center; font-size: 13px; color: var(--muted); background: #0b0818; }
       footer.foot nav { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; } footer.foot a { color: #d9cffc; text-decoration: none; font-weight: 500; } footer.foot a:hover { text-decoration: underline; }
       #faq { position: relative; padding: clamp(60px, 8vw, 110px) clamp(16px, 5vw, 80px); background: #120d24; }

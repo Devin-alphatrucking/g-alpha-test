@@ -171,6 +171,7 @@ if (reduced) {
       sy(-(e.clientY / window.innerHeight - 0.5) * 24);
     });
     const glow = $('#glow');
+    gsap.set(glow, { x: window.innerWidth / 2, y: window.innerHeight / 2 }); // start mid-screen so it never flies in from the corner
     const gx = gsap.quickTo(glow, 'x', { duration: 0.4, ease: 'power3' });
     const gy = gsap.quickTo(glow, 'y', { duration: 0.4, ease: 'power3' });
     window.addEventListener('pointermove', (e) => {
