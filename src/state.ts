@@ -26,6 +26,8 @@ export interface Save {
   rel: Record<string, Rel>;
   keepsakes: string[];
   epilogue: boolean;
+  paidRooms: string[]; // room codes whose convoy-goal reward was already paid out
+  ageBand: '' | 'u13' | '13+'; // asked only when ads are switched on; under-13s never see ads
   skin: string; // equipped truck paint
   owned: string[]; // purchased paints (story paints are unlocked by finishing a story arc)
   quests: { day: string; list: Quest[] } | null;
@@ -43,7 +45,7 @@ export interface Quest {
 
 const KEY = 'dvn-haul-save-v1';
 
-const fresh = (): Save => ({ coins: 0, xp: 0, engine: 0, contract: 0, streak: 0, lastPlayDay: '', deliveries: 0, muted: false, tutorial: false, rel: {}, keepsakes: [], epilogue: false, skin: 'classic', owned: [], quests: null });
+const fresh = (): Save => ({ coins: 0, xp: 0, engine: 0, contract: 0, streak: 0, lastPlayDay: '', deliveries: 0, muted: false, tutorial: false, rel: {}, keepsakes: [], epilogue: false, paidRooms: [], ageBand: '', skin: 'classic', owned: [], quests: null });
 
 export function load(): Save {
   try {

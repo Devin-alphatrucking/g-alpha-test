@@ -66,6 +66,9 @@
       .title .ch { display: inline-block; will-change: transform; }
       .title .ln.amber { color: var(--amber); }
       .tag { margin: 14px auto 20px; max-width: 480px; font-size: clamp(15px, min(2vw, 2.6vh), 21px); color: #fff; opacity: .92; text-shadow: 0 2px 14px rgba(70,10,50,.5); }
+      .invite { display: inline-block; margin: 0 auto 14px; padding: 8px 18px; border-radius: 999px; background: rgba(18,13,36,.55); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(8px); font-weight: 700; color: #fff; }
+      .invite[hidden] { display: none; }
+      .invite b { color: var(--amber); letter-spacing: .2em; }
       .scroll-cue { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2; font-size: 12px; letter-spacing: .25em; text-transform: uppercase; color: #fff; opacity: .75; display: none; white-space: nowrap; }
       @media (max-width: 640px) { .scroll-cue { font-size: 10px; letter-spacing: .18em; } }
       @media (min-height: 760px) { .scroll-cue { display: block; } }
@@ -260,6 +263,22 @@
       ul.mem li::before { content: '· '; color: var(--amber); }
       #journalBtn.dot::after { content: ''; position: absolute; top: 6px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px rgba(255,93,115,.3); }
       #ui #journalBtn { position: relative; }
+      #roomPill { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 999px; cursor: pointer; pointer-events: auto; }
+      #roomPill[hidden] { display: none; }
+      .dotroom { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 0 rgba(46,230,197,.6); animation: roompulse 1.8s infinite; }
+      @keyframes roompulse { 70% { box-shadow: 0 0 0 8px rgba(46,230,197,0); } 100% { box-shadow: 0 0 0 0 rgba(46,230,197,0); } }
+      .rbox { width: min(500px, 100%); padding: 22px; max-height: 92vh; overflow: auto; } .rbox h2 { margin: 2px 0 6px; font-size: 30px; }
+      .rbox p { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 6px 0 12px; }
+      .rbtns { display: flex; gap: 10px; flex-wrap: wrap; } .rjoin { display: flex; gap: 8px; margin-top: 14px; }
+      .rjoin input { flex: 1; min-width: 0; font: 700 22px var(--display); letter-spacing: .3em; text-transform: uppercase; text-align: center; color: var(--text); background: rgba(255,255,255,.08); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+      .rcode { font: 700 54px var(--display); letter-spacing: .22em; text-align: center; color: var(--amber); margin: 4px 0; padding-left: .22em; }
+      .rlink { display: flex; gap: 8px; } .rlink input { flex: 1; min-width: 0; font: 500 13px var(--body, sans-serif); color: var(--muted); background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; }
+      .rlist { margin: 14px 0; display: grid; gap: 6px; } .rd { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.06); font-size: 14px; } .rd.me { background: rgba(46,230,197,.14); } .rd b { color: var(--amber); }
+      .rteam { margin: 10px 0; font-size: 14px; } .rteam .qbar { margin-top: 6px; }
+      .remotes { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; } .remotes button { padding: 8px 12px !important; font-size: 13px; box-shadow: none !important; background: rgba(255,255,255,.1) !important; color: var(--text) !important; border: 1px solid var(--line) !important; }
+      #adBtn { margin-left: 8px; background: rgba(255,255,255,.14) !important; color: var(--text) !important; box-shadow: none !important; border: 1px solid var(--line) !important; }
+      #adMock { z-index: 60; }
+      .rerr { color: var(--coral); font-size: 13px; min-height: 18px; margin-top: 8px; }
       .qbox { width: min(480px, 100%); padding: 22px; }
       .qbox h2 { margin: 2px 0 0; font-size: 32px; } .qsub { color: var(--muted); font-size: 14px; margin: 4px 0 10px; }
       .qr { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--line); align-items: center; }
@@ -355,6 +374,7 @@
           <div class="hero-copy">
             <h1 class="title" aria-label="DVN Haul"><span class="ln" aria-hidden="true">DVN</span><span class="ln amber" aria-hidden="true">HAUL</span></h1>
             <p class="tag">A cozy delivery game for every age. Chase the sunset, beat the storm, and win over a town that remembers you.</p>
+            <p class="invite" id="invite" hidden></p>
             <button class="cta big" data-start id="startBtn">Start the engine</button>
           </div>
           <div class="scroll-cue" aria-hidden="true">Scroll to see the night shift</div>
@@ -411,10 +431,11 @@
             <div><div id="coins"><i></i><b id="coinTxt">0</b></div><div id="sub"></div></div>
           </div>
           <div id="env" class="glass"><span id="clock">5:00 PM</span><i></i><span id="wx">Clear</span></div>
+          <div id="roomPill" class="glass" hidden role="button" tabindex="0" aria-label="Open room"><span class="dotroom"></span><span id="roomTxt"></span></div>
           <div id="livePill" class="glass" hidden><span class="dotlive"></span><span id="liveTxt"></span></div>
         </div>
         <div id="right">
-          <div id="btns"><button class="ghost" id="soundBtn" aria-label="Toggle sound">On</button><button class="ghost" id="questsBtn" aria-label="Open daily quests">Daily</button><button class="ghost" id="journalBtn" aria-label="Open town journal">Journal</button><button class="ghost" id="garageBtn" aria-label="Open garage">Garage</button></div>
+          <div id="btns"><button class="ghost" id="soundBtn" aria-label="Toggle sound">On</button><button class="ghost" id="roomBtn" aria-label="Play with friends">Room</button><button class="ghost" id="questsBtn" aria-label="Open daily quests">Daily</button><button class="ghost" id="journalBtn" aria-label="Open town journal">Journal</button><button class="ghost" id="garageBtn" aria-label="Open garage">Garage</button></div>
           <canvas id="minimap" width="280" height="186"></canvas>
         </div>
       </div>
@@ -459,6 +480,19 @@
       <div class="jhead"><div><div class="jk" id="jChapterK"></div><h2 id="jChapterT"></h2></div><div class="jprog" id="jProg"></div></div>
       <div id="jRows"></div>
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px"><button id="shareBtn">Share my progress</button><button id="journalClose">Close</button></div>
+    </div></div>
+    <div id="agegate" class="modal" role="dialog" aria-label="Before we start"><div class="box glass ebox">
+      <h2>Quick question</h2>
+      <p>DVN Haul is free thanks to optional ads you can choose to watch for bonus coins. To keep everyone safe, how old are you?</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button id="ageU13">I'm under 13</button><button id="age13">I'm 13 or older</button></div>
+      <p style="font-size:12px;margin-top:14px">Under 13? You'll never see ads. Ads are never personalised, and we don't ask for your name or email.</p>
+    </div></div>
+    <div id="adMock" class="modal" role="dialog" aria-label="Test advertisement"><div class="box glass ebox"><div class="jk">TEST AD</div><h2>Your reward in <span id="adLeft">3</span>…</h2><p>This is a mock advertisement used for testing.</p></div></div>
+    <div id="room" class="modal" role="dialog" aria-label="Play rooms"><div class="box glass rbox">
+      <div class="jk">PLAY ROOMS</div>
+      <h2 id="roomTitle">Play with friends</h2>
+      <div id="roomBody"></div>
+      <div style="text-align:right;margin-top:14px"><button id="roomClose">Close</button></div>
     </div></div>
     <div id="quests" class="modal" role="dialog" aria-label="Daily quests"><div class="box glass qbox">
       <div class="jk">TODAY</div>

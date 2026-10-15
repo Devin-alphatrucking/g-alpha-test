@@ -20,6 +20,15 @@ try {
   /* no save yet */
 }
 
+/* ---------- invited to a Play Room (?room=ABCD) ---------- */
+const invitedRoom = new URLSearchParams(location.search).get('room');
+if (invitedRoom && /^[A-Za-z]{4}$/.test(invitedRoom)) {
+  const inv = $('#invite');
+  inv.innerHTML = `You're invited to room <b>${invitedRoom.toUpperCase()}</b>`;
+  inv.hidden = false;
+  ['#startBtn', '#startBtn2'].forEach((id) => ($(id).textContent = 'Join your friends'));
+}
+
 /* ---------- title: split letters ---------- */
 $$('.title .ln').forEach((ln) => {
   const text = ln.textContent ?? '';

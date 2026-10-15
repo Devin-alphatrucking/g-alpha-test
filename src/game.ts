@@ -6,6 +6,17 @@ import { playScene, isDialogOpen } from './dialog';
 import { SKINS, skinById, skinOwned } from './skins';
 import { ensureQuests, recordDelivery, describe } from './quests';
 import { shareCard } from './share';
+import { RoomClient, EMOTES, type RoomEvent } from './rooms';
+import { initAds, needsAgeGate, adsAllowed, showRewarded } from './ads';
+
+interface Remote {
+  img: Phaser.GameObjects.Image;
+  shadow: Phaser.GameObjects.Image;
+  tag: Phaser.GameObjects.Text;
+  x: number;
+  y: number;
+  a: number;
+}
 import { sfx, audio, setMuted } from './sfx';
 import { buildWorld, DEPOT, DEPOT_RECT, HOUSES, ROADS_H, ROADS_V, ROAD_W, WORLD_H, WORLD_W, type Rect, type Light } from './world';
 import { avatarURL, addAvatarTextures } from './avatars';
@@ -180,6 +191,9 @@ class HaulScene extends Phaser.Scene {
   private peds: Ped[] = [];
   private pedT = 0;
   private knock = { x: 0, y: 0 };
+  private room = new RoomClient();
+  private remotes = new Map<string, Remote>();
+  private baseDel = 0; // deliveries made before joining the room
   private miniBase!: HTMLCanvasElement;
 
   constructor() {
@@ -249,6 +263,14 @@ class HaulScene extends Phaser.Scene {
     this.wfx = new WeatherFx();
     this.wfx.onThunder = () => audio.thunder();
     if (import.meta.env.DEV) (window as unknown as { __haul: HaulScene }).__haul = this; // dev-only test hook
+    this.room.getMe = () => ({ x: this.truck.x, y: this.truck.y, a: this.angle_, v: this.speed, skin: skinOwned(save, skinById(save.skin)) ? save.skin : 'classic', del: Math.max(0, save.deliveries - this.baseDel) });
+    this.room.onChange = () => this.refreshRoomUi();
+    this.room.onEvent = (e) => this.onRoomEvent(e);
+    this.room.onLost = () => {
+      this.toast('Lost connection to the room');
+      this.clearRemotes();
+    };
+    window.addEventListener('pagehide', () => this.room.leave());
     ensureQuests(save); // today's three quests
     this.miniBase = this.buildMiniBase();
     this.bindUi();
@@ -268,11 +290,11 @@ class HaulScene extends Phaser.Scene {
   }
 
   private modalOpen(): boolean {
-    return !!document.querySelector('#garage.on, #journal.on, #quests.on, #epilogue.on');
+    return !!document.querySelector('#garage.on, #journal.on, #quests.on, #room.on, #epilogue.on');
   }
 
   private closeModals() {
-    document.querySelectorAll('#garage.on, #journal.on, #quests.on, #epilogue.on').forEach((m) => m.classList.remove('on'));
+    document.querySelectorAll('#garage.on, #journal.on, #quests.on, #room.on, #epilogue.on').forEach((m) => m.classList.remove('on'));
   }
 
   togglePause(force?: boolean) {
@@ -350,6 +372,10 @@ class HaulScene extends Phaser.Scene {
     if (fav) window.setTimeout(() => this.toast(`<img class="mini" alt="" src="${avatarURL(fav.id, 48)}"> ${esc(fav.name)}: “${esc(greeting(fav))}”`, 3600), streakBonus ? 2800 : 600);
     this.offerJobs();
     if (!save.tutorial) el('coach').style.display = 'block';
+    void initAds().then(() => this.ageGate());
+    // invite link (?room=ABCD): join straight away
+    const invited = new URLSearchParams(location.search).get('room');
+    if (invited && /^[A-Za-z]{4}$/.test(invited) && !this.room.online) void this.joinRoom(invited, false);
   }
 
   /* ---------- setup helpers ---------- */
@@ -880,6 +906,13 @@ class HaulScene extends Phaser.Scene {
       this.openQuests();
     };
     el('questsClose').onclick = () => el('quests').classList.remove('on');
+    el('roomBtn').onclick = () => {
+      sfx.tap();
+      this.openRoom();
+    };
+    el('roomPill').onclick = () => this.openRoom();
+    el('roomPill').onkeydown = (e) => (e.key === 'Enter' || e.key === ' ') && this.openRoom();
+    el('roomClose').onclick = () => el('room').classList.remove('on');
     el('shareBtn').onclick = async () => {
       sfx.tap();
       el('shareBtn').textContent = 'Making your card…';
@@ -974,7 +1007,7 @@ class HaulScene extends Phaser.Scene {
     sheet.innerHTML = `<h3>CHOOSE YOUR NEXT JOB${this.combo >= 2 ? ` · combo x${this.combo}` : ''}</h3><div class="jobs">${jobs
       .map((j, i) => {
         const len = j.d < 700 ? 'Short' : j.d < 1100 ? 'Medium' : 'Long';
-        const pay = Math.round(j.base * rewardMul(save) * (1 + this.liveBonus()));
+        const pay = Math.round(j.base * rewardMul(save) * (1 + this.liveBonus() + this.convoyBonus()));
         const face = `<img class="face" alt="" src="${avatarURL(j.to.id, 80)}">`;
         if (j.story) return `<button class="job story" data-i="${i}"><span class="badge">STORY</span><div class="who">${face}${esc(j.to.name)}</div><div class="st">${esc(j.story.title)}</div><div class="item">Carry: ${esc(j.story.item)}</div><div class="meta"><span>${j.limit}s</span><span class="pay">${pay} coins</span></div></button>`;
         return `<button class="job" data-i="${i}"><div class="who">${face}${esc(j.to.name)}</div><span class="tag ${len}">${len}</span><div class="meta"><span>${j.limit}s</span><span class="pay">~${pay} coins</span></div></button>`;
@@ -1024,6 +1057,165 @@ class HaulScene extends Phaser.Scene {
     this.truck.setTexture(`truck_${id}`);
     this.shadow.setTexture(`truck_${id}`);
     sfx.tap();
+  }
+
+  /** Only appears when ads are switched on and the player hasn't answered yet. */
+  private ageGate() {
+    if (!needsAgeGate(save)) return;
+    const set = (band: 'u13' | '13+') => () => {
+      save.ageBand = band;
+      persist(save);
+      el('agegate').classList.remove('on');
+    };
+    el('ageU13').onclick = set('u13');
+    el('age13').onclick = set('13+');
+    el('agegate').classList.add('on');
+    el('ageU13').focus();
+  }
+
+  /* ---------- play rooms ---------- */
+
+  private convoyBonus(): number {
+    return this.room.online ? Math.min(0.3, 0.1 * (this.room.count - 1)) : 0; // +10% per friend online, max +30%
+  }
+
+  private async joinRoom(code: string | null, openPanel = true) {
+    const err = el('roomErr');
+    try {
+      const skin = skinOwned(save, skinById(save.skin)) ? save.skin : 'classic';
+      this.baseDel = save.deliveries;
+      if (code) await this.room.join(code, skin);
+      else await this.room.create(skin);
+      sfx.buy();
+      if (openPanel) this.openRoom();
+      else this.toast(`You joined room ${this.room.code}. Say hi from the Room button!`);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (err) err.textContent = msg === 'room not found' ? 'No room with that code. Check it and try again.' : msg === 'room is full' ? 'That room is full (6 drivers max).' : 'Could not reach the room server. Try again in a moment.';
+      else this.toast('Could not join the room');
+    }
+  }
+
+  private leaveRoom() {
+    this.room.leave();
+    this.clearRemotes();
+    this.openRoom();
+  }
+
+  private clearRemotes() {
+    this.remotes.forEach((r) => [r.img, r.shadow, r.tag].forEach((o) => o.destroy()));
+    this.remotes.clear();
+    this.refreshRoomUi();
+  }
+
+  private refreshRoomUi() {
+    const pill = el('roomPill');
+    pill.hidden = !this.room.online;
+    if (this.room.online) el('roomTxt').textContent = `Room ${this.room.code} · ${this.room.count} driver${this.room.count > 1 ? 's' : ''} · Team ${Math.min(this.room.team, this.room.goal)}/${this.room.goal}`;
+    if (el('room').classList.contains('on')) this.renderRoom(false);
+  }
+
+  private onRoomEvent(e: RoomEvent) {
+    const d = this.room.drivers.find((x) => x.id === e.id);
+    if (e.e === 'join') {
+      if (d) this.toast(`${esc(d.name)} joined the room`);
+    } else if (e.e === 'goal') {
+      if (!save.paidRooms.includes(this.room.code)) {
+        save.paidRooms = [...save.paidRooms.slice(-19), this.room.code]; // remember so each room pays only once
+        save.coins += 100;
+        persist(save);
+        this.refreshProfile();
+        sfx.levelUp();
+        this.toast('Convoy goal reached! +100 coins for everyone');
+      }
+    } else if (EMOTES[e.e]) {
+      const r = this.remotes.get(e.id);
+      if (r) this.floatText(r.x, r.y - 34, EMOTES[e.e], '#ffffff');
+    }
+  }
+
+  private updateRemotes(s: number) {
+    if (!this.room.online) return;
+    const seen = new Set<string>();
+    for (const d of this.room.drivers) {
+      seen.add(d.id);
+      let r = this.remotes.get(d.id);
+      if (!r) {
+        const key = `truck_${SKINS.some((k) => k.id === d.skin) ? d.skin : 'classic'}`;
+        const shadow = this.add.image(d.x, d.y, key).setScale(0.5).setTint(0x000000).setAlpha(0.25).setDepth(9);
+        const img = this.add.image(d.x, d.y, key).setScale(0.5).setAlpha(0.92).setDepth(9.8);
+        const tag = this.txt(d.x, d.y - 30, d.name, 13, '#ffffff', { backgroundColor: '#121a33cc', padding: { x: 6, y: 2 }, fontStyle: '600' }).setDepth(36);
+        r = { img, shadow, tag, x: d.x, y: d.y, a: d.a };
+        this.remotes.set(d.id, r);
+      }
+      // glide toward the latest network position (hides the ~6 Hz update rate)
+      const k = 1 - Math.exp(-10 * s);
+      r.x += (d.x - r.x) * k;
+      r.y += (d.y - r.y) * k;
+      r.a += Phaser.Math.Angle.Wrap(d.a - r.a) * k;
+      r.img.setPosition(r.x, r.y).setRotation(r.a);
+      r.shadow.setPosition(r.x + 6, r.y + 8).setRotation(r.a);
+      r.tag.setPosition(r.x, r.y - 30);
+    }
+    this.remotes.forEach((r, id) => {
+      if (seen.has(id)) return;
+      [r.img, r.shadow, r.tag].forEach((o) => o.destroy());
+      this.remotes.delete(id);
+    });
+  }
+
+  private openRoom() {
+    this.renderRoom(true);
+    el('room').classList.add('on');
+  }
+
+  private renderRoom(focus: boolean) {
+    const body = el('roomBody');
+    const rc = this.room;
+    if (!rc.online) {
+      el('roomTitle').textContent = 'Play with friends';
+      body.innerHTML = `<p>Drive together in a private room of up to 6. Friends join with a 4-letter code or your invite link. Chat is emotes only, so it's safe for everyone.</p>
+        <div class="rbtns"><button id="rmCreate">Create a room</button></div>
+        <div class="rjoin"><input id="rmCode" maxlength="4" placeholder="CODE" aria-label="Room code" autocomplete="off" /><button id="rmJoin">Join</button></div>
+        <div class="rerr" id="roomErr" role="alert"></div>`;
+      el('rmCreate').onclick = () => void this.joinRoom(null);
+      el('rmJoin').onclick = () => void this.joinRoom((el('rmCode') as HTMLInputElement).value);
+      (el('rmCode') as HTMLInputElement).onkeydown = (e) => e.key === 'Enter' && void this.joinRoom((el('rmCode') as HTMLInputElement).value);
+      if (focus) (el('rmCode') as HTMLInputElement).focus();
+      return;
+    }
+    el('roomTitle').textContent = 'Your room';
+    const pct = Math.min(100, Math.round((rc.team / rc.goal) * 100));
+    const me = `<div class="rd me"><span>${esc(rc.name)} (you)</span><b>${Math.max(0, save.deliveries - this.baseDel)}</b></div>`;
+    const others = rc.drivers.map((d) => `<div class="rd"><span>${esc(d.name)}</span><b>${d.del}</b></div>`).join('');
+    const bonus = this.convoyBonus();
+    body.innerHTML = `<div class="rcode" aria-label="Room code">${rc.code}</div>
+      <div class="rlink"><input readonly id="rmLink" value="${esc(rc.inviteLink())}" aria-label="Invite link" /><button id="rmCopy">Copy</button></div>
+      <div class="rteam"><b>Convoy goal:</b> ${Math.min(rc.team, rc.goal)} of ${rc.goal} deliveries together${rc.rewarded ? ' · reached!' : ''}<div class="qbar"><i style="width:${pct}%"></i></div></div>
+      <div class="rteam"><b>Convoy bonus:</b> ${bonus ? `+${Math.round(bonus * 100)}% coins on every delivery` : 'invite a friend for +10% coins each'}</div>
+      <div class="rlist">${me}${others}</div>
+      <div class="rteam"><b>Say something</b></div>
+      <div class="remotes">${Object.entries(EMOTES).map(([k, v]) => `<button data-e="${k}">${esc(v)}</button>`).join('')}</div>
+      <div class="rbtns"><button id="rmLeave" style="background:rgba(255,255,255,.12);color:#f4f6ff;box-shadow:none">Leave room</button></div>`;
+    el('rmCopy').onclick = async () => {
+      const link = rc.inviteLink();
+      try {
+        if (navigator.share) await navigator.share({ title: 'Drive with me in DVN Haul', text: `Join my DVN Haul room ${rc.code}`, url: link });
+        else await navigator.clipboard.writeText(link);
+        this.toast('Invite link ready to share');
+      } catch {
+        (el('rmLink') as HTMLInputElement).select();
+      }
+    };
+    body.querySelectorAll<HTMLButtonElement>('[data-e]').forEach((b) => {
+      b.onclick = () => {
+        sfx.tap();
+        void rc.emote(b.dataset.e!);
+        this.floatText(this.truck.x, this.truck.y - 34, EMOTES[b.dataset.e!], '#ffffff');
+      };
+    });
+    el('rmLeave').onclick = () => this.leaveRoom();
+    if (focus) el('rmCopy').focus();
   }
 
   /** Daily quests panel. Rewards are paid automatically the moment a quest completes. */
@@ -1126,6 +1318,7 @@ class HaulScene extends Phaser.Scene {
     };
     dot(DEPOT.x, DEPOT.y, 6, '#ffc233');
     this.cars.forEach((c) => (c.bus ? dot(c.x, c.y, 3.8, '#2ee6c5') : dot(c.x, c.y, 2.4, 'rgba(255,255,255,.55)')));
+    this.remotes.forEach((r) => dot(r.x, r.y, 4.2, '#ff9fb5')); // friends
     const tgt = this.targetPoint();
     if (tgt) {
       x.strokeStyle = this.phase === 'toDepot' ? '#ffc233' : '#2ee6c5';
@@ -1216,7 +1409,7 @@ class HaulScene extends Phaser.Scene {
     const comboMul = 1 + 0.1 * Math.min(Math.max(this.combo - 1, 0), 4); // +10% per streak step, max +40%
     const starMul = [0, 0.8, 1.2, 1.5][stars];
     const story = job.story;
-    const live = 1 + this.liveBonus();
+    const live = 1 + this.liveBonus() + this.convoyBonus();
     const reward = story ? Math.round(job.base * rewardMul(save) * live) : Math.round(job.base * rewardMul(save) * starMul * comboMul * live);
     const xp = story ? 40 : 8 + stars * 6;
     const lvBefore = levelOf(save.xp);
@@ -1303,8 +1496,28 @@ class HaulScene extends Phaser.Scene {
     void customerSays(job.to, { stars, session: this.session, rel, weather: this.wfx.kind, night: nightly, crashed }).then((line) => {
       if (this.job === job && this.phase === 'result') this.showBubble(job.to, line); // ignore replies that arrive after "Next job"
     });
-    sheet.innerHTML = `<div class="result"><div class="stars">${[1, 2, 3].map((n) => `<span>${STAR(n <= stars)}</span>`).join('')}</div><div class="big">+${reward} coins</div><div class="chips"><span class="chip">${stars === 3 ? 'Speedy!' : stars === 2 ? 'Good run' : 'A bit late'}</span>${this.combo >= 2 ? `<span class="chip">Combo x${this.combo}</span>` : ''}${live > 1 ? `<span class="chip">Live bonus +${Math.round((live - 1) * 100)}%</span>` : ''}<span class="chip">+${xp} XP</span></div><button id="nextJob">Next job →</button></div>`;
+    sheet.innerHTML = `<div class="result"><div class="stars">${[1, 2, 3].map((n) => `<span>${STAR(n <= stars)}</span>`).join('')}</div><div class="big">+${reward} coins</div><div class="chips"><span class="chip">${stars === 3 ? 'Speedy!' : stars === 2 ? 'Good run' : 'A bit late'}</span>${this.combo >= 2 ? `<span class="chip">Combo x${this.combo}</span>` : ''}${live > 1 ? `<span class="chip">${this.convoyBonus() ? 'Convoy' : 'Live'} bonus +${Math.round((live - 1) * 100)}%</span>` : ''}<span class="chip">+${xp} XP</span></div><button id="nextJob">Next job →</button></div>`;
     next();
+    if (adsAllowed(save)) {
+      // optional rewarded ad: only for 13+, only when the player taps it
+      const btn = document.createElement('button');
+      btn.id = 'adBtn';
+      btn.textContent = `Watch an ad: +${reward} coins`;
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const ok = await showRewarded();
+        if (ok) {
+          save.coins += reward;
+          persist(save);
+          this.refreshProfile();
+          sfx.coin();
+          btn.textContent = `+${reward} coins added`;
+        } else {
+          btn.textContent = 'No ad available right now';
+        }
+      };
+      sheet.querySelector('.result')?.appendChild(btn);
+    }
     if (unlocked.length) {
       window.setTimeout(() => {
         sfx.levelUp();
@@ -1425,6 +1638,7 @@ class HaulScene extends Phaser.Scene {
 
     this.cars.forEach((c) => this.updateCar(c, s));
     this.updatePeds(s);
+    this.updateRemotes(s);
     this.drawFx();
 
     const tp = this.targetPoint();
