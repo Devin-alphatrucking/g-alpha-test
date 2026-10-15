@@ -1,0 +1,2 @@
+# ads.txt: authorised ad sellers. Replace this line after your ad network approves you.
+# Example for Google AdSense (use YOUR publisher id):  google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

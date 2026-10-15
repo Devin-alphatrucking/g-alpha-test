@@ -1,3 +1,4 @@
+import './fonts';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { avatarURL } from './avatars';
@@ -5,6 +6,7 @@ import { audio, setMuted } from './sfx';
 import { STORY } from './story';
 import { SKINS } from './skins';
 import { renderCard } from './share';
+import { initAnalytics, track } from './analytics';
 import type { Save } from './state';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -25,12 +27,15 @@ try {
   /* no save yet */
 }
 
+void initAnalytics();
+
 /* ---------- invited to a Play Room (?room=ABCD) ---------- */
 const invitedRoom = new URLSearchParams(location.search).get('room');
 if (invitedRoom && /^[A-Za-z]{4}$/.test(invitedRoom)) {
   const inv = $('#invite');
   inv.innerHTML = `You're invited to room <b>${invitedRoom.toUpperCase()}</b>`;
   inv.hidden = false;
+  track('Invite Landing');
   ['#startBtn', '#startBtn2'].forEach((id) => ($(id).textContent = 'Join your friends'));
 }
 
@@ -42,7 +47,7 @@ const CAST = [
   { id: 'doc', name: 'Dr. Whiskers', role: 'Vet', quote: "Purr-fect delivery. You're the cat's pajamas!" },
   { id: 'cap', name: 'Captain Nemo', role: 'Sea captain', quote: "Smooth sailing, mate. Reminds me of a storm off Darwin in '78." },
 ];
-$('#cards').innerHTML = CAST.map((c) => `<article class="card"><img alt="" width="96" height="96" src="${avatarURL(c.id, 192)}"><h3>${c.name}</h3><div class="role">${c.role}</div><blockquote>${c.quote}</blockquote></article>`).join('');
+$('#cards').innerHTML = CAST.map((c) => `<article class="card"><img alt="${c.name}, ${c.role.toLowerCase()} in DVN Haul" width="96" height="96" loading="lazy" src="${avatarURL(c.id, 192)}"><h3>${c.name}</h3><div class="role">${c.role}</div><blockquote>${c.quote}</blockquote></article>`).join('');
 
 // the story-scene card: the actual first beat of Granny Maple's arc
 {
@@ -189,6 +194,7 @@ async function start(e?: Event) {
   const m = e as MouseEvent | undefined;
   const x = m && 'clientX' in m && m.clientX ? m.clientX : window.innerWidth / 2;
   const y = m && 'clientY' in m && m.clientY ? m.clientY : window.innerHeight / 2;
+  track('Start Game', { from: new URLSearchParams(location.search).has('play') ? 'deeplink' : 'landing' });
   audio.unlock();
   audio.rev();
   const curtain = $('#curtain');

@@ -8,6 +8,7 @@ import { ensureQuests, recordDelivery, describe } from './quests';
 import { shareCard } from './share';
 import { RoomClient, EMOTES, type RoomEvent } from './rooms';
 import { initAds, needsAgeGate, adsAllowed, showRewarded } from './ads';
+import { track, stopAnalytics } from './analytics';
 
 interface Remote {
   img: Phaser.GameObjects.Image;
@@ -918,6 +919,7 @@ class HaulScene extends Phaser.Scene {
       el('shareBtn').textContent = 'Making your card…';
       try {
         const r = await shareCard(save);
+        track('Share Card', { result: r });
         this.toast(r === 'shared' ? 'Shared!' : 'Card saved to your downloads');
       } catch {
         this.toast('Could not make the card');
@@ -1064,6 +1066,7 @@ class HaulScene extends Phaser.Scene {
     if (!needsAgeGate(save)) return;
     const set = (band: 'u13' | '13+') => () => {
       save.ageBand = band;
+      if (band === 'u13') stopAnalytics();
       persist(save);
       el('agegate').classList.remove('on');
     };
@@ -1087,6 +1090,7 @@ class HaulScene extends Phaser.Scene {
       if (code) await this.room.join(code, skin);
       else await this.room.create(skin);
       sfx.buy();
+      track(code ? 'Room Joined' : 'Room Created');
       if (openPanel) this.openRoom();
       else this.toast(`You joined room ${this.room.code}. Say hi from the Room button!`);
     } catch (e) {
@@ -1416,6 +1420,7 @@ class HaulScene extends Phaser.Scene {
     save.coins += reward;
     save.xp += xp;
     save.deliveries++;
+    if (save.deliveries === 1) track('First Delivery');
     this.session++;
 
     // what this character will remember about the trip
@@ -1439,6 +1444,7 @@ class HaulScene extends Phaser.Scene {
     const unlocked = this.storyReady().filter((c) => !readyBefore.has(c.id));
     const doneQuests = recordDelivery(save, { stars, crashed, night: nightly, customer: job.to.id });
     if (doneQuests.length) {
+      track('Daily Quest Done');
       this.refreshProfile();
       window.setTimeout(() => {
         sfx.levelUp();
@@ -1475,6 +1481,7 @@ class HaulScene extends Phaser.Scene {
       rel.aff = Math.min(100, rel.aff + opt.aff);
       rel.tags.push(opt.tag);
       rel.beats++;
+      track('Story Beat', { character: job.to.id, beat: rel.beats });
       const done = rel.beats >= 3;
       if (done && !save.keepsakes.includes(KEEPSAKE[job.to.id])) save.keepsakes.push(KEEPSAKE[job.to.id]);
       persist(save);
@@ -1511,6 +1518,7 @@ class HaulScene extends Phaser.Scene {
           persist(save);
           this.refreshProfile();
           sfx.coin();
+          track('Ad Watched');
           btn.textContent = `+${reward} coins added`;
         } else {
           btn.textContent = 'No ad available right now';

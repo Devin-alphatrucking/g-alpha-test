@@ -107,3 +107,17 @@ Other ways the project can earn, none built yet: a sponsored branded paint or cu
 ## Landing page images
 
 `public/shots/world-*.webp` are **real captures of the game** (the same view at 2:00 PM, golden hour, dusk, night and rainy night, 1920x1200). The landing page cross-fades between them as you scroll. To refresh them after art changes, run the game at 1920x1200, freeze the traffic in one scene, set the time of day and weather, and export the Phaser canvas for each frame (`canvas.toDataURL('image/webp', 0.84)`); for the rain frame also draw the `#rain` overlay canvas on top.
+
+## SEO, analytics and launch
+
+Production build with SEO values stamped in (canonical, social tags, sitemap, robots, IndexNow key file):
+
+```bash
+SITE_URL=https://your-domain.com CONTACT_EMAIL=you@your-domain.com INDEXNOW_KEY=yourrandomkey123 npm run build
+npm run seo:check      # audits dist/ like a crawler would; fails on missing canonicals, bad lengths, broken links...
+npm run indexnow       # after deploying: pings Bing/Yandex (needs the same SITE_URL + INDEXNOW_KEY)
+```
+
+Without `SITE_URL` the build still works but prints a warning and uses a placeholder domain. Full strategy, keyword map, fast-crawl steps, analytics goals, ads management and launch checklist: [docs/SEO-MARKETING.md](docs/SEO-MARKETING.md).
+
+Optional cookie-less analytics: set `public/analytics.config.json` to `{ "enabled": true, "provider": "plausible", "domain": "your-domain.com" }`. It never loads for players who say they are under 13.

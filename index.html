@@ -1,20 +1,71 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-AU">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#120d24" />
-    <title>DVN Haul – Every delivery has a story</title>
-    <meta name="description" content="DVN Haul is a cozy delivery-driving game for all ages. Chase the sunset, beat the storm and win over a town of AI characters who remember you." />
-    <meta property="og:title" content="DVN Haul – Every delivery has a story" />
-    <meta property="og:description" content="Drive through golden hour, night and storm in a living town. Free to play in your browser." />
+    <title>DVN Haul – Free Cozy Truck Delivery Game (Play in Browser)</title>
+    <meta name="description" content="Play DVN Haul free in your browser: a cozy top-down truck delivery game with day-night cycles, storms, a story and multiplayer rooms. No download." />
+    <link rel="canonical" href="__SITE_URL__/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="author" content="Alpha Trucking" />
+    <meta property="og:site_name" content="DVN Haul" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_AU" />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:title" content="DVN Haul – Free Cozy Truck Delivery Game" />
+    <meta property="og:description" content="Drive a truck through a living town from golden hour to a stormy night. Free in your browser, no download. Play solo or with friends." />
+    <meta property="og:image" content="__SITE_URL__/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Top-down view of the DVN Haul town with the depot, traffic and neighbours" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DVN Haul – Free Cozy Truck Delivery Game" />
+    <meta name="twitter:description" content="Drive a truck through a living town from golden hour to a stormy night. Free in your browser, no download." />
+    <meta name="twitter:image" content="__SITE_URL__/og.jpg" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="icon" href="./icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="preload" as="image" href="./shots/world-day.webp" type="image/webp" fetchpriority="high" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "VideoGame",
+            "@id": "__SITE_URL__/#game",
+            "name": "DVN Haul",
+            "url": "__SITE_URL__/",
+            "description": "A cozy top-down truck delivery driving game you play free in your browser. Deliver parcels through a living town with a day-night cycle and weather, build friendships with five neighbours across fifteen short stories, and drive with friends in private rooms.",
+            "image": "__SITE_URL__/og.jpg",
+            "genre": ["Driving", "Simulation", "Casual"],
+            "gamePlatform": "Web browser",
+            "applicationCategory": "Game",
+            "operatingSystem": "Any modern web browser",
+            "playMode": ["SinglePlayer", "MultiPlayer"],
+            "inLanguage": "en-AU",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "AUD", "availability": "https://schema.org/InStock" },
+            "publisher": { "@id": "__SITE_URL__/#org" }
+          },
+          { "@type": "Organization", "@id": "__SITE_URL__/#org", "name": "Alpha Trucking", "logo": "__SITE_URL__/icon-512.png" },
+          { "@type": "WebSite", "@id": "__SITE_URL__/#site", "url": "__SITE_URL__/", "name": "DVN Haul", "inLanguage": "en-AU", "publisher": { "@id": "__SITE_URL__/#org" } },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              { "@type": "Question", "name": "Is DVN Haul really free to play?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. DVN Haul is a free browser game with nothing to buy and no account to create. Any ads are optional, never forced, and never shown to players under 13." } },
+              { "@type": "Question", "name": "Do I need to download anything?", "acceptedAnswer": { "@type": "Answer", "text": "No. It runs in your browser on a laptop, desktop, tablet or phone. Press Start the engine and drive." } },
+              { "@type": "Question", "name": "How do I drive the truck?", "acceptedAnswer": { "@type": "Answer", "text": "Use the arrow keys or W, A, S, D on a keyboard, and press Space to honk. Touch screens get an on-screen D-pad. Load up at the DVN Depot, stay on the road and deliver before the timer runs out." } },
+              { "@type": "Question", "name": "Can I play with friends?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Create a private room, share the 4-letter code or invite link, and up to six drivers can cruise together, share a team goal and send quick emotes. There is no free-text chat." } },
+              { "@type": "Question", "name": "Is DVN Haul safe for kids?", "acceptedAnswer": { "@type": "Answer", "text": "DVN Haul has no accounts, no open chat and no collection of personal details. Progress is saved only in your own browser." } },
+              { "@type": "Question", "name": "Does my progress save?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, automatically in your browser on that device. Clearing your browser's site data will reset it." } },
+              { "@type": "Question", "name": "What is the game about?", "acceptedAnswer": { "@type": "Answer", "text": "You run deliveries from the DVN Depot in a small town with five neighbours, fifteen short stories, changing weather and a day-night cycle. The friendships you build change how the characters talk to you." } }
+            ]
+          }
+        ]
+      }
+    </script>
     <style>
       :root {
         --navy: #121a33; --ink: #120d24; --panel: rgba(18, 26, 51, .78); --line: rgba(255,255,255,.14);
@@ -67,7 +118,7 @@
       .h1, .h2 { margin: 0; font-family: var(--display); font-weight: 700; letter-spacing: -.02em; color: #fff; text-shadow: 0 6px 40px rgba(0,0,0,.35); }
       .h1 { font-size: clamp(44px, 6.6vw, 104px); line-height: .96; }
       .h2 { font-size: clamp(38px, 5vw, 78px); line-height: 1; }
-      .h1 .ln { display: block; overflow: hidden; padding: .04em .06em .1em; margin: 0 -.06em; }
+      .h1 .eyebrow { display: block; width: fit-content; text-shadow: none; } .h1 .ln { display: block; overflow: hidden; padding: .04em .06em .1em; margin: 0 -.06em; }
       .h1 .ln > span { display: inline-block; will-change: transform; }
       .amber { color: var(--amber); }
       .sub { margin: 22px 0 28px; font-size: clamp(16px, 1.45vw, 20px); line-height: 1.55; color: #fff; opacity: .92; max-width: 500px; }
@@ -135,7 +186,19 @@
       #finale { position: relative; min-height: 80svh; display: grid; place-items: center; text-align: center; padding: 120px 20px 90px; background: radial-gradient(ellipse at 50% 120%, rgba(255,154,90,.55) 0%, rgba(122,58,126,.4) 40%, #120d24 72%); overflow: hidden; }
       #finale p { color: #fff; opacity: .88; margin: 18px auto 34px; max-width: 460px; font-size: clamp(16px, 1.8vw, 20px); line-height: 1.5; }
       #finale small { display: block; margin-top: 22px; color: #e8dcff; opacity: .75; font-size: 14px; }
-      footer.foot { padding: 26px 20px 34px; text-align: center; font-size: 13px; color: var(--muted); background: #0b0818; }
+      footer.foot { padding: 28px 20px 36px; text-align: center; font-size: 13px; color: var(--muted); background: #0b0818; }
+      footer.foot nav { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; } footer.foot a { color: #d9cffc; text-decoration: none; font-weight: 500; } footer.foot a:hover { text-decoration: underline; }
+      #faq { position: relative; padding: clamp(60px, 8vw, 110px) clamp(16px, 5vw, 80px); background: #120d24; }
+      #faq h2 { margin: 0 0 clamp(24px, 3vw, 40px); font: 700 clamp(34px, 5vw, 70px)/1 var(--display); letter-spacing: -.02em; }
+      .faqs { display: grid; gap: 12px; max-width: 860px; }
+      .faqs details { border-radius: 18px; background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.025)); border: 1px solid var(--line); padding: 4px 20px; transition: border-color .2s; }
+      .faqs details[open] { border-color: rgba(255,194,51,.5); }
+      .faqs summary { cursor: pointer; list-style: none; padding: 16px 28px 16px 0; font: 600 clamp(17px, 1.6vw, 20px) var(--display); position: relative; }
+      .faqs summary::-webkit-details-marker { display: none; }
+      .faqs summary::after { content: '+'; position: absolute; right: 0; top: 12px; font-size: 26px; color: var(--amber); transition: transform .2s; }
+      .faqs details[open] summary::after { transform: rotate(45deg); }
+      .faqs p { margin: 0 0 18px; color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 70ch; }
+      .faqs a, .faqs em { color: var(--amber); }
       #glow { position: fixed; left: 0; top: 0; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%; background: radial-gradient(circle, rgba(255,194,51,.2), rgba(255,194,51,0) 65%); pointer-events: none; z-index: 25; mix-blend-mode: screen; opacity: 0; transition: opacity .3s; }
       @media (pointer: coarse) { #glow { display: none; } }
 
@@ -371,10 +434,11 @@
 
     <!-- ===================== LANDING ===================== -->
     <div id="landing">
+      <noscript><style>#world{height:auto}.stage{height:auto;overflow:visible}.panel{position:relative!important;opacity:1!important;top:auto!important;bottom:auto!important;padding:90px 0 30px}.mock,.rail,.scroll-cue,.wclock{display:none}.shot:not(.base){display:none}</style></noscript>
       <div id="glow"></div>
       <header class="nav" id="nav">
         <a class="logo" href="#world" aria-label="DVN Haul home"><svg aria-hidden="true"><use href="#logo"/></svg>DVN HAUL</a>
-        <nav class="navlinks" aria-label="Sections"><a href="#cast">The locals</a><a href="#features">Features</a></nav>
+        <nav class="navlinks" aria-label="Sections"><a href="#cast">The locals</a><a href="#features">Features</a><a href="./how-to-play.html">How to play</a></nav>
         <button class="cta sm" data-start>Play now</button>
       </header>
 
@@ -395,9 +459,8 @@
 
             <article class="panel on" id="p0" data-bg="./shots/world-day.webp">
               <div class="copy">
-                <p class="eyebrow">A cozy driving game · free in your browser</p>
-                <h1 class="h1" aria-label="Deliver the town. Win its heart."><span class="ln"><span>Deliver the town.</span></span><span class="ln"><span class="amber">Win its heart.</span></span></h1>
-                <p class="sub">Drive your truck through a living town, from sunny afternoon to stormy night. Every neighbour remembers how you drive.</p>
+                <h1 class="h1"><span class="eyebrow">Free truck delivery game · play in your browser</span><span class="ln"><span>Deliver the town.</span></span><span class="ln"><span class="amber">Win its heart.</span></span></h1>
+                <p class="sub">DVN Haul is a free, cozy driving game you play right in your browser. Deliver parcels through a living town from sunny afternoon to stormy night, and meet neighbours who remember how you drive.</p>
                 <p class="invite" id="invite" hidden></p>
                 <div class="ctas"><button class="cta big" data-start id="startBtn">Start the engine</button><a class="ghostbtn" href="#features">See what's inside</a></div>
                 <ul class="facts"><li>No download</li><li>Phone &amp; laptop</li><li>All ages</li></ul>
@@ -466,6 +529,20 @@
           </div>
         </section>
 
+        <section id="faq" aria-label="Frequently asked questions">
+          <div class="sect-k">Good to know</div>
+          <h2>Questions, answered.</h2>
+          <div class="faqs">
+            <details><summary>Is DVN Haul really free to play?</summary><p>Yes. DVN Haul is a free browser game with nothing to buy and no account to create. Any ads are optional, never forced, and never shown to players under 13.</p></details>
+            <details><summary>Do I need to download anything?</summary><p>No. It runs in your browser on a laptop, desktop, tablet or phone. Press <em>Start the engine</em> and drive.</p></details>
+            <details><summary>How do I drive the truck?</summary><p>Use the arrow keys or W, A, S, D on a keyboard, and press Space to honk. Touch screens get an on-screen D-pad. Load up at the DVN Depot, stay on the road and deliver before the timer runs out. The <a href="./how-to-play.html">how to play guide</a> has tips for three-star runs.</p></details>
+            <details><summary>Can I play with friends?</summary><p>Yes. Create a private room, share the 4-letter code or invite link, and up to six drivers can cruise together, share a team goal and send quick emotes. There is no free-text chat.</p></details>
+            <details><summary>Is DVN Haul safe for kids?</summary><p>DVN Haul has no accounts, no open chat and no collection of personal details. Progress is saved only in your own browser. Read more on the <a href="./parents.html">page for parents</a>.</p></details>
+            <details><summary>Does my progress save?</summary><p>Yes, automatically in your browser on that device. Clearing your browser's site data will reset it.</p></details>
+            <details><summary>What is the game about?</summary><p>You run deliveries from the DVN Depot in a small town with five neighbours, fifteen short stories, changing weather and a day-night cycle. The friendships you build change how the characters talk to you.</p></details>
+          </div>
+        </section>
+
         <section id="finale" aria-label="Play">
           <div>
             <h2>The road<br />is waiting.</h2>
@@ -475,7 +552,7 @@
           </div>
         </section>
       </main>
-      <footer class="foot">DVN Haul · A DVN Alpha Trucking experience</footer>
+      <footer class="foot"><nav aria-label="Footer"><a href="./how-to-play.html">How to play</a><a href="./parents.html">For parents</a><a href="./privacy.html">Privacy</a></nav><div>DVN Haul · A DVN Alpha Trucking experience</div></footer>
     </div>
 
     <div id="curtain" aria-hidden="true"><svg viewBox="0 0 110 60"><use href="#logo"/></svg></div>
