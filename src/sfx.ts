@@ -71,6 +71,28 @@ export const sfx = {
     tone(600, 0.08, 'triangle');
     tone(900, 0.16, 'triangle', 0.07, 0.07);
   },
+  /** Bus air-brake: a short filtered noise burst. */
+  hiss: () => {
+    if (muted) return;
+    try {
+      const c = ac();
+      const t0 = c.currentTime;
+      const src = c.createBufferSource();
+      src.buffer = noise();
+      const f = c.createBiquadFilter();
+      f.type = 'highpass';
+      f.frequency.value = 2200;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.05, t0 + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55);
+      src.connect(f).connect(g).connect(master!);
+      src.start(t0);
+      src.stop(t0 + 0.6);
+    } catch {
+      /* audio unavailable */
+    }
+  },
   horn: () => {
     tone(349, 0.32, 'square', 0.035);
     tone(440, 0.32, 'square', 0.035);

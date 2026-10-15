@@ -78,6 +78,25 @@ interface Job {
 const HEART = (on: boolean) => `<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 5 6 5c2 0 3.4 1.1 4.2 2.4h3.6C14.6 6.1 16 5 18 5c3.3 0 5.1 3.400 3.600 6.800C19.500 16.400 12 21 12 21z" fill="${on ? '#ff5d73' : 'rgba(255,255,255,.16)'}"/></svg>`;
 type Phase = 'idle' | 'toDepot' | 'toCust' | 'result';
 type Axis = 'h' | 'v';
+interface PedNode {
+  x: number;
+  y: number;
+  n: { to: number; cross: boolean }[];
+}
+interface Ped {
+  img: Phaser.GameObjects.Image;
+  shadow: Phaser.GameObjects.Image;
+  from: number;
+  to: number;
+  prev: number;
+  t: number; // 0..1 along the current edge
+  cross: boolean; // current edge is a zebra crossing
+  speed: number;
+  wait: number;
+  seed: number;
+  x: number;
+  y: number;
+}
 interface Car {
   img: Phaser.GameObjects.Image;
   shadow: Phaser.GameObjects.Image;
@@ -140,6 +159,9 @@ class HaulScene extends Phaser.Scene {
   private tripCrashes = 0;
   private paused = false;
   private live: Live | null = null;
+  private nodes: PedNode[] = [];
+  private peds: Ped[] = [];
+  private pedT = 0;
   private miniBase!: HTMLCanvasElement;
 
   constructor() {
@@ -158,6 +180,8 @@ class HaulScene extends Phaser.Scene {
     this.shadow = this.add.image(0, 0, 'truck').setScale(0.5).setTint(0x000000).setAlpha(0.3).setDepth(9);
     this.truck = this.add.image(DEPOT.x, DEPOT.y + 130, 'truck').setScale(0.5).setDepth(10).setRotation(this.angle_);
     this.spawnTraffic();
+    this.buildPedGraph();
+    this.spawnPeds();
 
     // lighting: multiply overlay for ambient colour, additive sprites for lamps/headlights
     this.ambient = this.add.rectangle(0, 0, WORLD_W, WORLD_H, 0xffffff).setOrigin(0).setDepth(30).setBlendMode(Phaser.BlendModes.MULTIPLY);
@@ -369,6 +393,24 @@ class HaulScene extends Phaser.Scene {
         rr(c, 1, 19, 2, 4, 1, '#ff5d5d');
       });
     });
+    // Pedestrians (top-down, walking right): shoulders + head, 5 outfits
+    [['#e5605a', '#f1c9a5'], ['#3fa7d6', '#d9a273'], ['#f2b84b', '#f0c4a8'], ['#6bbf8a', '#8d5a3b'], ['#9b7fd1', '#e3b58f']].forEach(([shirt, skin], i) => {
+      this.canvasTex(`ped${i}`, 32, 32, (c) => {
+        c.scale(2, 2);
+        c.fillStyle = shirt;
+        c.beginPath();
+        c.ellipse(8, 8, 3.2, 6.6, 0, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = skin;
+        c.beginPath();
+        c.arc(8.6, 8, 3.5, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = 'rgba(40,25,20,.75)';
+        c.beginPath();
+        c.arc(8, 8, 3.2, Math.PI * 0.55, Math.PI * 1.45); // hair on the back of the head
+        c.fill();
+      });
+    });
     // City bus (faces right): long body, window band, roof vents, DVN Transit stripe
     this.canvasTex('bus', 200, 68, (c) => {
       c.scale(2, 2);
@@ -522,11 +564,12 @@ class HaulScene extends Phaser.Scene {
       let pos = 0;
       let x = 0;
       let y = 0;
-      for (let tries = 0; tries < 12; tries++) {
+      for (let tries = 0; tries < 60; tries++) {
         pos = 80 + Math.random() * ((axis === 'h' ? WORLD_W : WORLD_H) - 160);
         x = axis === 'h' ? pos : fixed + laneOff(axis, dir);
         y = axis === 'h' ? fixed + laneOff(axis, dir) : pos;
-        if (dist({ x, y }, this.truck) > 380) break;
+        // never spawn near the truck (that was the "traffic appears on top of me" bug) or on top of another vehicle
+        if (dist({ x, y }, this.truck) > 520 && this.cars.every((o) => dist({ x, y }, o) > 150)) break;
       }
       const key = bus ? 'bus' : `car${i % 5}`;
       const angle = axis === 'h' ? (dir > 0 ? 0 : Math.PI) : dir > 0 ? Math.PI / 2 : -Math.PI / 2;
@@ -550,6 +593,30 @@ class HaulScene extends Phaser.Scene {
     c.dwell -= s;
     if (!block && c.ignore <= 0) {
       block = dist({ x: ax, y: ay }, this.truck) < (c.bus ? 54 : 44) || this.cars.some((o) => o !== c && dist({ x: ax, y: ay }, o) < (o.bus ? 54 : 38));
+      // also yield to anything inside a forward cone, so cross traffic at intersections stops for us instead of ramming
+      if (!block) {
+        const fx = Math.cos(c.angle);
+        const fy = Math.sin(c.angle);
+        const inCone = (o: { x: number; y: number }, r: number) => {
+          const dx = o.x - c.x;
+          const dy = o.y - c.y;
+          const d = Math.hypot(dx, dy);
+          return d < r && (dx * fx + dy * fy) / (d || 1) > 0.55;
+        };
+        block = inCone(this.truck, c.bus ? 120 : 96) || this.cars.some((o) => o !== c && inCone(o, 70));
+      }
+    }
+    // pedestrians on a zebra crossing always have right of way, even when the deadlock-breaker is active
+    if (!block) {
+      const fx = Math.cos(c.angle);
+      const fy = Math.sin(c.angle);
+      block = this.peds.some((p) => {
+        if (!this.pedCrossing(p)) return false;
+        const dx = p.x - c.x;
+        const dy = p.y - c.y;
+        const d = Math.hypot(dx, dy);
+        return d < 36 || (d < 120 && (dx * fx + dy * fy) / (d || 1) > 0.5);
+      });
     }
     c.ignore -= s;
     const target = block ? 0 : c.top * (1 - 0.2 * this.wfx.rain);
@@ -572,7 +639,10 @@ class HaulScene extends Phaser.Scene {
       // bus stop: halt for a few seconds on the approach to each intersection (before the crosswalk)
       for (const r of c.axis === 'h' ? ROADS_V : ROADS_H) {
         const stop = r - c.dir * 150;
-        if ((c.prev - stop) * (along - stop) <= 0 && c.prev !== along) c.dwell = 2.2 + Math.random() * 1.6;
+        if ((c.prev - stop) * (along - stop) <= 0 && c.prev !== along) {
+          c.dwell = 2.2 + Math.random() * 1.6;
+          if (dist(c, this.truck) < 480) sfx.hiss(); // only audible when the bus is near
+        }
       }
     }
     for (const r of c.axis === 'h' ? ROADS_V : ROADS_H) {
@@ -599,10 +669,28 @@ class HaulScene extends Phaser.Scene {
   }
 
   private crash(c: Car) {
+    const atFault = Math.abs(this.speed) > 40; // a parked or crawling truck is never blamed
     this.crashT = this.time.now + 1300;
-    this.speed = -Math.abs(this.speed) * 0.35;
+    // separate the two vehicles so they don't stay overlapped: shove the car away, bounce the truck back
+    const away = Phaser.Math.Angle.Between(this.truck.x, this.truck.y, c.x, c.y);
+    const cx = c.x + Math.cos(away) * 34;
+    const cy = c.y + Math.sin(away) * 34;
+    if (!this.blocked(cx, cy)) {
+      c.x = cx;
+      c.y = cy;
+    }
+    const tx = this.truck.x - Math.cos(away) * 16;
+    const ty = this.truck.y - Math.sin(away) * 16;
+    if (!this.blocked(tx, ty)) this.truck.setPosition(tx, ty);
     c.speed = 0;
-    c.stun = 1.4;
+    c.ignore = 0;
+    c.wait = 0;
+    c.stun = atFault ? 1.6 : 2.4; // the car waits it out instead of driving through us
+    if (!atFault) {
+      sfx.bump();
+      return;
+    }
+    this.speed = -Math.abs(this.speed) * 0.35;
     this.combo = 0;
     this.tripCrashes++;
     sfx.crash();
@@ -610,6 +698,91 @@ class HaulScene extends Phaser.Scene {
     this.fxShake(220, 0.009);
     this.floatText(this.truck.x, this.truck.y - 40, this.phase === 'toCust' ? 'Crash! -3s' : 'Crash!', '#ff8a8a');
     if (this.phase === 'toCust') this.timeLeft -= 3;
+  }
+
+  /* ---------- pedestrians ---------- */
+
+  /** Sidewalk graph: 4 corner nodes per intersection, joined by sidewalks and zebra crossings. */
+  private buildPedGraph() {
+    const idx = (i: number, j: number, sx: number, sy: number) => (i * 3 + j) * 4 + (sx > 0 ? 2 : 0) + (sy > 0 ? 1 : 0);
+    this.nodes = Array.from({ length: ROADS_V.length * ROADS_H.length * 4 }, () => ({ x: 0, y: 0, n: [] }));
+    ROADS_V.forEach((cx, i) =>
+      ROADS_H.forEach((cy, j) => {
+        for (const sx of [-1, 1]) {
+          for (const sy of [-1, 1]) {
+            const node = this.nodes[idx(i, j, sx, sy)];
+            node.x = cx + sx * 68;
+            node.y = cy + sy * 68;
+            node.n.push({ to: idx(i, j, -sx, sy), cross: true }, { to: idx(i, j, sx, -sy), cross: true });
+            if (sx > 0 && i < ROADS_V.length - 1) node.n.push({ to: idx(i + 1, j, -1, sy), cross: false });
+            if (sx < 0 && i > 0) node.n.push({ to: idx(i - 1, j, 1, sy), cross: false });
+            if (sy > 0 && j < ROADS_H.length - 1) node.n.push({ to: idx(i, j + 1, sx, -1), cross: false });
+            if (sy < 0 && j > 0) node.n.push({ to: idx(i, j - 1, sx, 1), cross: false });
+          }
+        }
+      }),
+    );
+  }
+
+  private spawnPeds() {
+    for (let i = 0; i < 16; i++) {
+      const from = Math.floor(Math.random() * this.nodes.length);
+      const pick = Phaser.Utils.Array.GetRandom(this.nodes[from].n);
+      const key = `ped${i % 5}`;
+      const shadow = this.add.image(0, 0, key).setScale(0.64).setTint(0x000000).setAlpha(0.28).setDepth(6);
+      const img = this.add.image(0, 0, key).setScale(0.64).setDepth(7);
+      this.peds.push({ img, shadow, from, to: pick.to, prev: -1, t: Math.random() * 0.9, cross: pick.cross, speed: 30 + Math.random() * 14, wait: Math.random() * 2, seed: Math.random() * 6, x: 0, y: 0 });
+    }
+  }
+
+  private pedCrossing(p: Ped): boolean {
+    return p.cross && p.t > 0.02 && p.t < 0.98;
+  }
+
+  /** True while vehicles are close to the zebra crossing between A and B and still moving. */
+  private crossBusy(a: PedNode, b: PedNode): boolean {
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    return this.cars.some((c) => c.speed > 18 && dist(c, mid) < 150) || (Math.abs(this.speed) > 30 && dist(this.truck, mid) < 150);
+  }
+
+  private updatePeds(s: number) {
+    for (const p of this.peds) {
+      let a = this.nodes[p.from];
+      let b = this.nodes[p.to];
+      if (p.wait > 0) p.wait -= s;
+      else if (p.t === 0 && p.cross && this.crossBusy(a, b)) p.wait = 0.35; // wait at the curb for a gap
+      else {
+        p.t += (p.speed * s) / Math.max(1, dist(a, b));
+        if (p.t >= 1) {
+          const opts = this.nodes[p.to].n.filter((o) => o.to !== p.from);
+          const pick = Phaser.Utils.Array.GetRandom(opts.length ? opts : this.nodes[p.to].n);
+          p.prev = p.from;
+          p.from = p.to;
+          p.to = pick.to;
+          p.cross = pick.cross;
+          p.t = 0;
+          a = this.nodes[p.from];
+          b = this.nodes[p.to];
+        }
+      }
+      p.x = a.x + (b.x - a.x) * p.t;
+      p.y = a.y + (b.y - a.y) * p.t;
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      const bob = 0.64 * (1 + 0.07 * Math.sin(this.time.now * 0.016 + p.seed));
+      p.img.setPosition(p.x, p.y).setRotation(ang).setScale(bob);
+      p.shadow.setPosition(p.x + 3, p.y + 4).setRotation(ang).setScale(bob);
+
+      // running someone over is just like a crash: combo reset and a time penalty
+      if (this.pedCrossing(p) && Math.abs(this.speed) > 25 && dist(this.truck, p) < 30 && this.time.now > this.pedT) {
+        this.pedT = this.time.now + 2000;
+        p.wait = 1.4;
+        this.combo = 0;
+        this.speed *= 0.3;
+        sfx.bump();
+        this.floatText(this.truck.x, this.truck.y - 40, this.phase === 'toCust' ? 'Careful! -2s' : 'Careful!', '#ffb38a');
+        if (this.phase === 'toCust') this.timeLeft -= 2;
+      }
+    }
   }
 
   /* ---------- UI ---------- */
@@ -1082,6 +1255,7 @@ class HaulScene extends Phaser.Scene {
     audio.engine(Math.min(1, Math.abs(this.speed) / speedOf(save)), !this.intro);
 
     this.cars.forEach((c) => this.updateCar(c, s));
+    this.updatePeds(s);
     this.drawFx();
 
     const tp = this.targetPoint();
