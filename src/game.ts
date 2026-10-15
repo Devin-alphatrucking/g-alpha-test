@@ -884,7 +884,8 @@ class HaulScene extends Phaser.Scene {
   }
 
   private offerJobs() {
-    const spd = speedOf(save);
+    // Time limits only partly scale with engine upgrades (6% per level vs the truck's 12%), so upgrades make 3 stars easier.
+    const spd = 230 * (1 + 0.06 * save.engine);
     const mk = (to: Customer, story?: Beat): Job => {
       const d = dist(DEPOT, to) * 1.25;
       const limit = Math.round(d / (spd * 0.72)) + 9;
@@ -1304,7 +1305,8 @@ class HaulScene extends Phaser.Scene {
     else if (back) this.speed = Math.max(-max * 0.4, this.speed - (this.speed > 0 ? 640 : 260) * s);
     else this.speed -= Math.sign(this.speed) * Math.min(Math.abs(this.speed), 300 * s);
 
-    const grip = Phaser.Math.Clamp(Math.abs(this.speed) / 130, 0, 1);
+    // steering bites with speed, but never drops to nothing while the player is on the pedals, so three-point turns work
+    const grip = Phaser.Math.Clamp(Math.abs(this.speed) / 130, (up || back) && (left || right) ? 0.4 : 0, 1);
     this.angle_ += ((right ? 1 : 0) - (left ? 1 : 0)) * 2.7 * grip * Math.sign(this.speed) * s * (1 - 0.18 * this.wfx.rain);
 
     const dx = Math.cos(this.angle_) * this.speed * s;
@@ -1348,7 +1350,7 @@ class HaulScene extends Phaser.Scene {
   }
 
   private blocked(x: number, y: number): boolean {
-    const m = 20;
+    const m = 17; // truck-to-curb clearance: tight enough to feel like a road, loose enough to U-turn
     return this.obstacles.some((o) => x > o.x - m && x < o.x + o.w + m && y > o.y - m && y < o.y + o.h + m);
   }
 
