@@ -110,14 +110,28 @@ interface Car {
   speed: number;
   top: number;
   axis: Axis;
-  fixed: number;
+  fixed: number; // coordinate of the road centre line (perpendicular to travel)
   dir: 1 | -1;
-  prev: number;
+  s: number; // position along the road; the car sits exactly on its lane, so it never drifts sideways
+  prevS: number;
+  pend: TurnPlan | null; // a turn decided but not yet started
+  turn: (TurnPlan & { t: number }) | null; // a turn in progress, driven along a curve
   wait: number;
   ignore: number;
   stun: number;
   bus: boolean; // longer, slower, stops at bus stops before intersections
   dwell: number; // seconds left standing at a bus stop
+}
+/** A left/right turn at an intersection: a quadratic Bezier from the entry lane to the exit lane. */
+interface TurnPlan {
+  p0: { x: number; y: number };
+  p1: { x: number; y: number };
+  p2: { x: number; y: number };
+  len: number;
+  axis: Axis;
+  fixed: number;
+  dir: 1 | -1;
+  startS: number; // value of `s` at which the curve begins
 }
 
 const LANE = 30;
@@ -165,6 +179,7 @@ class HaulScene extends Phaser.Scene {
   private nodes: PedNode[] = [];
   private peds: Ped[] = [];
   private pedT = 0;
+  private knock = { x: 0, y: 0 };
   private miniBase!: HTMLCanvasElement;
 
   constructor() {
@@ -583,14 +598,11 @@ class HaulScene extends Phaser.Scene {
       const shadow = this.add.image(x, y, key).setScale(sc).setTint(0x000000).setAlpha(0.28).setDepth(8);
       const img = this.add.image(x, y, key).setScale(sc).setDepth(bus ? 9.5 : 9);
       const beam = this.add.image(x, y, 'cone').setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(31).setDisplaySize(bus ? 220 : 170, bus ? 120 : 100).setTint(0xfff1c8).setAlpha(0);
-      this.cars.push({ img, shadow, beam, x, y, angle, speed: 0, top: bus ? 70 + Math.random() * 25 : 95 + Math.random() * 55, axis, fixed, dir, prev: pos, wait: 0, ignore: 0, stun: 0, bus, dwell: 0 });
+      this.cars.push({ img, shadow, beam, x, y, angle, speed: 0, top: bus ? 70 + Math.random() * 25 : 95 + Math.random() * 55, axis, fixed, dir, s: pos, prevS: pos, pend: null, turn: null, wait: 0, ignore: 0, stun: 0, bus, dwell: 0 });
     }
   }
 
   private updateCar(c: Car, s: number) {
-    const heading = c.axis === 'h' ? (c.dir > 0 ? 0 : Math.PI) : c.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-    c.angle += Phaser.Math.Angle.Wrap(heading - c.angle) * Math.min(1, 6 * s);
-
     const look = c.bus ? 88 : 64;
     const ax = c.x + Math.cos(c.angle) * look;
     const ay = c.y + Math.sin(c.angle) * look;
@@ -625,8 +637,9 @@ class HaulScene extends Phaser.Scene {
       });
     }
     c.ignore -= s;
-    const target = block ? 0 : c.top * (1 - 0.2 * this.wfx.rain);
-    c.speed += Phaser.Math.Clamp(target - c.speed, -430 * s, 150 * s);
+    // ease into corners, and brake/accelerate smoothly instead of snapping
+    const target = block ? 0 : c.top * (1 - 0.2 * this.wfx.rain) * (c.turn || c.pend ? 0.6 : 1);
+    c.speed += Phaser.Math.Clamp(target - c.speed, -320 * s, 110 * s);
     if (block && c.speed < 8) {
       c.wait += s;
       if (c.wait > 1.8) {
@@ -635,36 +648,57 @@ class HaulScene extends Phaser.Scene {
       }
     } else c.wait = 0;
 
-    c.x += Math.cos(c.angle) * c.speed * s;
-    c.y += Math.sin(c.angle) * c.speed * s;
-    if (c.axis === 'h') c.y += (c.fixed + laneOff('h', c.dir) - c.y) * Math.min(1, 5 * s);
-    else c.x += (c.fixed + laneOff('v', c.dir) - c.x) * Math.min(1, 5 * s);
-
-    let along = c.axis === 'h' ? c.x : c.y;
-    if (c.bus) {
-      // bus stop: halt for a few seconds on the approach to each intersection (before the crosswalk)
+    if (c.turn) {
+      // turning: follow the curve; heading comes from the curve's tangent, so the car never slides sideways
+      const T = c.turn;
+      T.t = Math.min(1, T.t + (c.speed * s) / T.len);
+      const u = 1 - T.t;
+      c.x = u * u * T.p0.x + 2 * u * T.t * T.p1.x + T.t * T.t * T.p2.x;
+      c.y = u * u * T.p0.y + 2 * u * T.t * T.p1.y + T.t * T.t * T.p2.y;
+      c.angle = Math.atan2(2 * u * (T.p1.y - T.p0.y) + 2 * T.t * (T.p2.y - T.p1.y), 2 * u * (T.p1.x - T.p0.x) + 2 * T.t * (T.p2.x - T.p1.x));
+      if (T.t >= 1) {
+        c.axis = T.axis;
+        c.fixed = T.fixed;
+        c.dir = T.dir;
+        c.s = c.axis === 'h' ? c.x : c.y;
+        c.prevS = c.s;
+        c.turn = null;
+      }
+    } else {
+      // straight: locked to the lane line, so there is no lateral wobble at all
+      c.s += c.dir * c.speed * s;
+      const off = laneOff(c.axis, c.dir);
+      if (c.axis === 'h') {
+        c.x = c.s;
+        c.y = c.fixed + off;
+        c.angle = c.dir > 0 ? 0 : Math.PI;
+      } else {
+        c.y = c.s;
+        c.x = c.fixed + off;
+        c.angle = c.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      }
       for (const r of c.axis === 'h' ? ROADS_V : ROADS_H) {
-        const stop = r - c.dir * 150;
-        if ((c.prev - stop) * (along - stop) <= 0 && c.prev !== along) {
-          c.dwell = 2.2 + Math.random() * 1.6;
+        const was = (r - c.prevS) * c.dir; // distance still to go to the junction centre (positive = approaching)
+        const now = (r - c.s) * c.dir;
+        if (c.bus && was > 150 && now <= 150) {
+          c.dwell = 2.2 + Math.random() * 1.6; // bus stop on the approach, before the crosswalk
           if (dist(c, this.truck) < 480) sfx.hiss(); // only audible when the bus is near
         }
+        if (!c.pend && was > 175 && now <= 175 && Math.random() < (c.bus ? 0.2 : 0.35)) c.pend = this.planTurn(c, r);
+      }
+      c.prevS = c.s;
+      if (c.pend && (c.s - c.pend.startS) * c.dir >= 0) {
+        c.turn = { ...c.pend, t: 0 };
+        c.pend = null;
+      }
+      // leaving the map: re-enter at the far edge (off-screen)
+      const lim = c.axis === 'h' ? WORLD_W : WORLD_H;
+      if (c.s < -90 || c.s > lim + 90) {
+        c.s = c.s < 0 ? lim + 90 : -90;
+        c.prevS = c.s;
+        c.pend = null;
       }
     }
-    for (const r of c.axis === 'h' ? ROADS_V : ROADS_H) {
-      if ((c.prev - r) * (along - r) <= 0 && c.prev !== along && Math.random() < (c.bus ? 0.2 : 0.35)) {
-        c.axis = c.axis === 'h' ? 'v' : 'h';
-        c.fixed = r;
-        c.dir = Math.random() < 0.5 ? 1 : -1;
-        along = c.axis === 'h' ? c.x : c.y;
-        break;
-      }
-    }
-    c.prev = along;
-    if (c.x < -90) c.x = WORLD_W + 90;
-    else if (c.x > WORLD_W + 90) c.x = -90;
-    if (c.y < -90) c.y = WORLD_H + 90;
-    else if (c.y > WORLD_H + 90) c.y = -90;
 
     c.img.setPosition(c.x, c.y).setRotation(c.angle);
     c.shadow.setPosition(c.x + 5, c.y + 7).setRotation(c.angle);
@@ -674,20 +708,57 @@ class HaulScene extends Phaser.Scene {
     if (dist(c, this.truck) < (c.bus ? 62 : 46) && this.time.now > this.crashT) this.crash(c);
   }
 
+  /** Plans a turn onto the road at coordinate `r`: a curve from this lane to the new road's lane. */
+  private planTurn(c: Car, r: number): TurnPlan {
+    const dir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
+    const axis: Axis = c.axis === 'h' ? 'v' : 'h';
+    const laneC = c.fixed + laneOff(c.axis, c.dir); // the lane we are in
+    const laneN = r + laneOff(axis, dir); // the lane we will join
+    const R = c.bus ? 70 : 58; // how far before/after the lane crossing the curve starts and ends
+    let p0: { x: number; y: number };
+    let p1: { x: number; y: number };
+    let p2: { x: number; y: number };
+    let startS: number;
+    if (c.axis === 'h') {
+      p1 = { x: laneN, y: laneC };
+      p0 = { x: laneN - c.dir * R, y: laneC };
+      p2 = { x: laneN, y: laneC + dir * R };
+      startS = p0.x;
+    } else {
+      p1 = { x: laneC, y: laneN };
+      p0 = { x: laneC, y: laneN - c.dir * R };
+      p2 = { x: laneC + dir * R, y: laneN };
+      startS = p0.y;
+    }
+    // arc length by sampling
+    let len = 0;
+    let px = p0.x;
+    let py = p0.y;
+    for (let i = 1; i <= 12; i++) {
+      const t = i / 12;
+      const u = 1 - t;
+      const x = u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x;
+      const y = u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y;
+      len += Math.hypot(x - px, y - py);
+      px = x;
+      py = y;
+    }
+    return { p0, p1, p2, len, axis, fixed: r, dir, startS };
+  }
+
+  /** Cars are solid to the truck, so it can't be driven through or "pushed" across the road. */
+  private carBlocked(x: number, y: number): boolean {
+    return this.cars.some((c) => Math.hypot(c.x - x, c.y - y) < (c.bus ? 56 : 40));
+  }
+
   private crash(c: Car) {
     const atFault = Math.abs(this.speed) > 40; // a parked or crawling truck is never blamed
     this.crashT = this.time.now + 1300;
-    // separate the two vehicles so they don't stay overlapped: shove the car away, bounce the truck back
-    const away = Phaser.Math.Angle.Between(this.truck.x, this.truck.y, c.x, c.y);
-    const cx = c.x + Math.cos(away) * 34;
-    const cy = c.y + Math.sin(away) * 34;
-    if (!this.blocked(cx, cy)) {
-      c.x = cx;
-      c.y = cy;
-    }
-    const tx = this.truck.x - Math.cos(away) * 16;
-    const ty = this.truck.y - Math.sin(away) * 16;
-    if (!this.blocked(tx, ty)) this.truck.setPosition(tx, ty);
+    // no teleporting: the truck gets a smooth knock away from the car (decays over ~0.4s); the car just stops
+    const away = Phaser.Math.Angle.Between(c.x, c.y, this.truck.x, this.truck.y);
+    const push = atFault ? 150 : 90;
+    this.knock.x = Math.cos(away) * push;
+    this.knock.y = Math.sin(away) * push;
     c.speed = 0;
     c.ignore = 0;
     c.wait = 0;
@@ -1313,11 +1384,25 @@ class HaulScene extends Phaser.Scene {
     const dy = Math.sin(this.angle_) * this.speed * s;
     let hit = false;
     const nx = Phaser.Math.Clamp(this.truck.x + dx, 30, WORLD_W - 30);
-    if (!this.blocked(nx, this.truck.y)) this.truck.x = nx;
+    if (!this.blocked(nx, this.truck.y) && !this.carBlocked(nx, this.truck.y)) this.truck.x = nx;
     else hit = true;
     const ny = Phaser.Math.Clamp(this.truck.y + dy, 30, WORLD_H - 30);
-    if (!this.blocked(this.truck.x, ny)) this.truck.y = ny;
+    if (!this.blocked(this.truck.x, ny) && !this.carBlocked(this.truck.x, ny)) this.truck.y = ny;
     else hit = true;
+    // crash knock-back: a short decaying slide, never a jump
+    if (Math.abs(this.knock.x) + Math.abs(this.knock.y) > 4) {
+      const kx = this.truck.x + this.knock.x * s;
+      const ky = this.truck.y + this.knock.y * s;
+      if (!this.blocked(kx, this.truck.y)) this.truck.x = kx;
+      else this.knock.x = 0;
+      if (!this.blocked(this.truck.x, ky)) this.truck.y = ky;
+      else this.knock.y = 0;
+      const decay = Math.exp(-7 * s);
+      this.knock.x *= decay;
+      this.knock.y *= decay;
+    } else {
+      this.knock.x = this.knock.y = 0;
+    }
     if (hit && this.speed > 90 && this.time.now > this.bumpT) {
       this.bumpT = this.time.now + 400;
       sfx.bump();
