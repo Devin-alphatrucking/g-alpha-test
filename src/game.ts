@@ -3,6 +3,9 @@ import { CUSTOMERS, customerSays, greeting, type Customer } from './ai';
 import { load, persist, levelOf, levelProgress, speedOf, rewardMul, upgradeCost, touchStreak, relOf, totalBeats, type Save } from './state';
 import { STORY, NEED, KEEPSAKE, CHAPTERS, TAG_MEM, chapterOf, type Beat } from './story';
 import { playScene, isDialogOpen } from './dialog';
+import { SKINS, skinById, skinOwned } from './skins';
+import { ensureQuests, recordDelivery, describe } from './quests';
+import { shareCard } from './share';
 import { sfx, audio, setMuted } from './sfx';
 import { buildWorld, DEPOT, DEPOT_RECT, HOUSES, ROADS_H, ROADS_V, ROAD_W, WORLD_H, WORLD_W, type Rect, type Light } from './world';
 import { avatarURL, addAvatarTextures } from './avatars';
@@ -177,8 +180,9 @@ class HaulScene extends Phaser.Scene {
     this.obstacles = world.obstacles;
     this.addPins();
 
-    this.shadow = this.add.image(0, 0, 'truck').setScale(0.5).setTint(0x000000).setAlpha(0.3).setDepth(9);
-    this.truck = this.add.image(DEPOT.x, DEPOT.y + 130, 'truck').setScale(0.5).setDepth(10).setRotation(this.angle_);
+    const skinKey = `truck_${skinOwned(save, skinById(save.skin)) ? save.skin : 'classic'}`;
+    this.shadow = this.add.image(0, 0, skinKey).setScale(0.5).setTint(0x000000).setAlpha(0.3).setDepth(9);
+    this.truck = this.add.image(DEPOT.x, DEPOT.y + 130, skinKey).setScale(0.5).setDepth(10).setRotation(this.angle_);
     this.spawnTraffic();
     this.buildPedGraph();
     this.spawnPeds();
@@ -230,6 +234,7 @@ class HaulScene extends Phaser.Scene {
     this.wfx = new WeatherFx();
     this.wfx.onThunder = () => audio.thunder();
     if (import.meta.env.DEV) (window as unknown as { __haul: HaulScene }).__haul = this; // dev-only test hook
+    ensureQuests(save); // today's three quests
     this.miniBase = this.buildMiniBase();
     this.bindUi();
     this.time.addEvent({ delay: 90, loop: true, callback: () => this.hudTick() });
@@ -248,11 +253,11 @@ class HaulScene extends Phaser.Scene {
   }
 
   private modalOpen(): boolean {
-    return !!document.querySelector('#garage.on, #journal.on, #epilogue.on');
+    return !!document.querySelector('#garage.on, #journal.on, #quests.on, #epilogue.on');
   }
 
   private closeModals() {
-    document.querySelectorAll('#garage.on, #journal.on, #epilogue.on').forEach((m) => m.classList.remove('on'));
+    document.querySelectorAll('#garage.on, #journal.on, #quests.on, #epilogue.on').forEach((m) => m.classList.remove('on'));
   }
 
   togglePause(force?: boolean) {
@@ -347,36 +352,37 @@ class HaulScene extends Phaser.Scene {
       c.roundRect(x, y, w, h, r);
       c.fill();
     };
-    // Truck (faces right), drawn at 2x
-    this.canvasTex('truck', 192, 112, (c) => {
-      c.scale(2, 2);
-      [[12, 3], [12, 47], [70, 5], [70, 45]].forEach(([x, y]) => rr(c, x, y, 14, 6, 2, '#161b30'));
-      const tg = c.createLinearGradient(0, 7, 0, 49);
-      tg.addColorStop(0, '#ffffff');
-      tg.addColorStop(1, '#d6dcec');
-      rr(c, 3, 7, 61, 42, 5, tg as unknown as string);
-      c.fillStyle = tg;
-      c.beginPath();
-      c.roundRect(3, 7, 61, 42, 5);
-      c.fill();
-      rr(c, 7, 11, 53, 34, 3, '#e6ebf7');
-      rr(c, 6, 24, 55, 8, 2, '#ffc233');
-      c.fillStyle = '#1b2547';
-      c.font = '700 13px Fredoka, system-ui, sans-serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillText('DVN', 33.5, 17.5);
-      c.fillText('HAUL', 33.5, 38.5);
-      [[14, 13], [46, 13], [14, 43], [46, 43]].forEach(([x, y]) => rr(c, x, y - 2, 7, 3, 1, '#b9c2d9'));
-      rr(c, 66, 10, 27, 36, 6, '#2b3a67');
-      rr(c, 68, 12, 14, 32, 4, '#394c85');
-      rr(c, 80, 14, 9, 28, 3, '#8fd3ff');
-      rr(c, 81, 15, 3, 26, 1.5, 'rgba(255,255,255,.55)');
-      rr(c, 92, 13, 3, 6, 1, '#ffe08a');
-      rr(c, 92, 37, 3, 6, 1, '#ffe08a');
-      rr(c, 2, 12, 2, 6, 1, '#ff5d73');
-      rr(c, 2, 38, 2, 6, 1, '#ff5d73');
-    });
+    // Trucks (face right), one texture per paint job, drawn at 2x
+    SKINS.forEach((sk) =>
+      this.canvasTex(`truck_${sk.id}`, 192, 112, (c) => {
+        c.scale(2, 2);
+        [[12, 3], [12, 47], [70, 5], [70, 45]].forEach(([x, y]) => rr(c, x, y, 14, 6, 2, '#161b30'));
+        const tg = c.createLinearGradient(0, 7, 0, 49);
+        tg.addColorStop(0, sk.trailer[0]);
+        tg.addColorStop(1, sk.trailer[1]);
+        c.fillStyle = tg;
+        c.beginPath();
+        c.roundRect(3, 7, 61, 42, 5);
+        c.fill();
+        rr(c, 7, 11, 53, 34, 3, sk.panel);
+        rr(c, 6, 24, 55, 8, 2, sk.stripe);
+        c.fillStyle = sk.ink;
+        c.font = '700 13px Fredoka, system-ui, sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText('DVN', 33.5, 17.5);
+        c.fillText('HAUL', 33.5, 38.5);
+        [[14, 13], [46, 13], [14, 43], [46, 43]].forEach(([x, y]) => rr(c, x, y - 2, 7, 3, 1, 'rgba(0,0,0,.18)'));
+        rr(c, 66, 10, 27, 36, 6, sk.cab[0]);
+        rr(c, 68, 12, 14, 32, 4, sk.cab[1]);
+        rr(c, 80, 14, 9, 28, 3, '#8fd3ff');
+        rr(c, 81, 15, 3, 26, 1.5, 'rgba(255,255,255,.55)');
+        rr(c, 92, 13, 3, 6, 1, '#ffe08a');
+        rr(c, 92, 37, 3, 6, 1, '#ffe08a');
+        rr(c, 2, 12, 2, 6, 1, '#ff5d73');
+        rr(c, 2, 38, 2, 6, 1, '#ff5d73');
+      }),
+    );
     // Cars in 5 colours
     ['#e5605a', '#3fa7d6', '#f2b84b', '#6bbf8a', '#9b7fd1'].forEach((col, i) => {
       this.canvasTex(`car${i}`, 112, 60, (c) => {
@@ -798,6 +804,22 @@ class HaulScene extends Phaser.Scene {
       this.openJournal();
     };
     el('journalClose').onclick = () => el('journal').classList.remove('on');
+    el('questsBtn').onclick = () => {
+      sfx.tap();
+      this.openQuests();
+    };
+    el('questsClose').onclick = () => el('quests').classList.remove('on');
+    el('shareBtn').onclick = async () => {
+      sfx.tap();
+      el('shareBtn').textContent = 'Making your card…';
+      try {
+        const r = await shareCard(save);
+        this.toast(r === 'shared' ? 'Shared!' : 'Card saved to your downloads');
+      } catch {
+        this.toast('Could not make the card');
+      }
+      el('shareBtn').textContent = 'Share my progress';
+    };
     el('epilogueClose').onclick = () => el('epilogue').classList.remove('on');
     const syncSound = () => {
       el('soundBtn').textContent = save.muted ? 'Off' : 'On';
@@ -924,6 +946,28 @@ class HaulScene extends Phaser.Scene {
     el('journalClose').focus();
   }
 
+  private equipSkin(id: string) {
+    save.skin = id;
+    persist(save);
+    this.truck.setTexture(`truck_${id}`);
+    this.shadow.setTexture(`truck_${id}`);
+    sfx.tap();
+  }
+
+  /** Daily quests panel. Rewards are paid automatically the moment a quest completes. */
+  private openQuests() {
+    const list = ensureQuests(save);
+    el('qRows').innerHTML = list
+      .map((q) => {
+        const pct = Math.min(100, Math.round((q.prog / q.goal) * 100));
+        return `<div class="qr${q.done ? ' done' : ''}"><div class="qt">${esc(describe(q))}</div><div class="qp"><div class="qbar"><i style="width:${pct}%"></i></div><span>${q.done ? 'Done' : `${q.prog}/${q.goal}`}</span></div><div class="qrw">${q.done ? '✓' : `+${q.reward}`}</div></div>`;
+      })
+      .join('');
+    el('qDone').textContent = `${list.filter((q) => q.done).length} of ${list.length} complete today`;
+    el('quests').classList.add('on');
+    el('questsClose').focus();
+  }
+
   private openGarage() {
     const body = el('garageBody');
     const items: { key: 'engine' | 'contract'; nm: string; ds: string }[] = [
@@ -952,6 +996,36 @@ class HaulScene extends Phaser.Scene {
       row.appendChild(b);
       body.appendChild(row);
     });
+    // paint shop: bought with coins, or unlocked by finishing a character's story
+    const paint = document.createElement('div');
+    paint.className = 'paint';
+    paint.innerHTML = '<div class="nm">Paint shop</div>';
+    const grid = document.createElement('div');
+    grid.className = 'swatches';
+    SKINS.forEach((sk) => {
+      const owned = skinOwned(save, sk);
+      const on = save.skin === sk.id;
+      const afford = !!sk.price && save.coins >= sk.price;
+      const b = document.createElement('button');
+      b.className = `sw${on ? ' on' : ''}`;
+      b.disabled = !owned && !afford;
+      b.setAttribute('aria-pressed', String(on));
+      b.innerHTML = `<span class="chipc" style="background:linear-gradient(${sk.trailer[0]},${sk.trailer[1]})"><i style="background:${sk.stripe}"></i><b style="background:${sk.cab[0]}"></b></span><span class="swn">${esc(sk.name)}</span><span class="sws">${on ? 'Equipped' : owned ? 'Equip' : sk.price ? `${sk.price} coins` : esc(sk.hint ?? 'Locked')}</span>`;
+      b.onclick = () => {
+        if (!owned) {
+          if (!sk.price || save.coins < sk.price) return;
+          save.coins -= sk.price;
+          save.owned.push(sk.id);
+          sfx.buy();
+          this.refreshProfile();
+        }
+        this.equipSkin(sk.id);
+        this.openGarage();
+      };
+      grid.appendChild(b);
+    });
+    paint.appendChild(grid);
+    body.appendChild(paint);
     el('garageStats').innerHTML = `<div class="chip">${save.coins.toLocaleString()} coins</div><div class="chip">${save.deliveries} deliveries</div><div class="chip">${save.streak}d streak</div>`;
     el('garage').classList.add('on');
     el('garageClose').focus();
@@ -1098,6 +1172,14 @@ class HaulScene extends Phaser.Scene {
     this.refreshProfile();
     if (gain) this.floatText(this.truck.x, this.truck.y - 66, `+${gain} friendship`, '#ff9fb5');
     const unlocked = this.storyReady().filter((c) => !readyBefore.has(c.id));
+    const doneQuests = recordDelivery(save, { stars, crashed, night: nightly, customer: job.to.id });
+    if (doneQuests.length) {
+      this.refreshProfile();
+      window.setTimeout(() => {
+        sfx.levelUp();
+        this.toast(`Daily quest done: ${esc(describe(doneQuests[0]))} · +${doneQuests[0].reward} coins`, 3000);
+      }, 1800);
+    }
 
     this.coins.emitParticleAt(this.truck.x, this.truck.y, 16 + stars * 6);
     this.floatText(this.truck.x, this.truck.y - 30, `+${reward}`);

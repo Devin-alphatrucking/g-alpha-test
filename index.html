@@ -211,7 +211,7 @@
 
       #garage { position: absolute; inset: 0; background: rgba(8,12,30,.6); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; pointer-events: auto; }
       #garage.on { display: flex; }
-      #garage .box { width: min(440px, calc(100vw - 24px)); padding: 20px; animation: rise .3s cubic-bezier(.2,1.2,.4,1); }
+      #garage .box { width: min(460px, calc(100vw - 24px)); max-height: 92vh; overflow: auto; padding: 20px; animation: rise .3s cubic-bezier(.2,1.2,.4,1); }
       @keyframes rise { from { transform: translateY(40px) scale(.95); opacity: 0; } }
       #garage h2 { margin: 0; font-size: 24px; } #garage .lead { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
       .up { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
@@ -260,6 +260,21 @@
       ul.mem li::before { content: '· '; color: var(--amber); }
       #journalBtn.dot::after { content: ''; position: absolute; top: 6px; right: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px rgba(255,93,115,.3); }
       #ui #journalBtn { position: relative; }
+      .qbox { width: min(480px, 100%); padding: 22px; }
+      .qbox h2 { margin: 2px 0 0; font-size: 32px; } .qsub { color: var(--muted); font-size: 14px; margin: 4px 0 10px; }
+      .qr { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--line); align-items: center; }
+      .qt { font-weight: 600; font-size: 16px; } .qr.done .qt { color: var(--teal); text-decoration: line-through; text-decoration-thickness: 1px; }
+      .qp { grid-column: 1; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+      .qbar { flex: 1; height: 8px; border-radius: 6px; background: rgba(255,255,255,.14); overflow: hidden; } .qbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--amber)); border-radius: 6px; }
+      .qrw { grid-column: 2; grid-row: 1 / span 2; font-weight: 700; color: var(--amber); font-size: 18px; }
+      .paint { padding: 14px 0 4px; border-top: 1px solid var(--line); } .paint .nm { font-weight: 600; margin-bottom: 8px; }
+      .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+      #ui .sw, .modal .sw { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; background: rgba(255,255,255,.07); color: var(--text); border: 1px solid var(--line); box-shadow: none; padding: 10px; border-radius: 14px; font-size: 13px; }
+      .sw.on { border-color: var(--teal); background: rgba(46,230,197,.12); }
+      .sw:disabled { opacity: .55; }
+      .chipc { position: relative; display: block; width: 100%; height: 26px; border-radius: 8px; overflow: hidden; }
+      .chipc i { position: absolute; left: 0; right: 30%; top: 10px; height: 6px; } .chipc b { position: absolute; right: 0; top: 0; bottom: 0; width: 30%; }
+      .swn { font-weight: 600; } .sws { color: var(--muted); font-size: 11px; }
       .ebox { width: min(520px, 100%); padding: 28px; text-align: center; }
       .ebox p { color: var(--muted); line-height: 1.5; font-size: 16px; }
       .ebox p b { color: var(--text); }
@@ -399,7 +414,7 @@
           <div id="livePill" class="glass" hidden><span class="dotlive"></span><span id="liveTxt"></span></div>
         </div>
         <div id="right">
-          <div id="btns"><button class="ghost" id="soundBtn" aria-label="Toggle sound">On</button><button class="ghost" id="journalBtn" aria-label="Open town journal">Journal</button><button class="ghost" id="garageBtn" aria-label="Open garage">Garage</button></div>
+          <div id="btns"><button class="ghost" id="soundBtn" aria-label="Toggle sound">On</button><button class="ghost" id="questsBtn" aria-label="Open daily quests">Daily</button><button class="ghost" id="journalBtn" aria-label="Open town journal">Journal</button><button class="ghost" id="garageBtn" aria-label="Open garage">Garage</button></div>
           <canvas id="minimap" width="280" height="186"></canvas>
         </div>
       </div>
@@ -443,7 +458,14 @@
     <div id="journal" class="modal" role="dialog" aria-label="Town journal"><div class="box glass jbox">
       <div class="jhead"><div><div class="jk" id="jChapterK"></div><h2 id="jChapterT"></h2></div><div class="jprog" id="jProg"></div></div>
       <div id="jRows"></div>
-      <div style="text-align:right;margin-top:14px"><button id="journalClose">Close</button></div>
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px"><button id="shareBtn">Share my progress</button><button id="journalClose">Close</button></div>
+    </div></div>
+    <div id="quests" class="modal" role="dialog" aria-label="Daily quests"><div class="box glass qbox">
+      <div class="jk">TODAY</div>
+      <h2>Daily quests</h2>
+      <p class="qsub" id="qDone"></p>
+      <div id="qRows"></div>
+      <div style="text-align:right;margin-top:14px"><button id="questsClose">Close</button></div>
     </div></div>
     <div id="epilogue" class="modal" role="dialog" aria-label="Epilogue"><div class="box glass ebox">
       <div class="jk">EPILOGUE</div>

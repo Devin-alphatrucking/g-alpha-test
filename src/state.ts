@@ -26,11 +26,24 @@ export interface Save {
   rel: Record<string, Rel>;
   keepsakes: string[];
   epilogue: boolean;
+  skin: string; // equipped truck paint
+  owned: string[]; // purchased paints (story paints are unlocked by finishing a story arc)
+  quests: { day: string; list: Quest[] } | null;
+}
+
+export interface Quest {
+  id: string;
+  kind: 'deliver' | 'fast' | 'clean' | 'night' | 'friend';
+  goal: number;
+  prog: number;
+  target?: string; // customer id for 'friend'
+  reward: number;
+  done: boolean;
 }
 
 const KEY = 'dvn-haul-save-v1';
 
-const fresh = (): Save => ({ coins: 0, xp: 0, engine: 0, contract: 0, streak: 0, lastPlayDay: '', deliveries: 0, muted: false, tutorial: false, rel: {}, keepsakes: [], epilogue: false });
+const fresh = (): Save => ({ coins: 0, xp: 0, engine: 0, contract: 0, streak: 0, lastPlayDay: '', deliveries: 0, muted: false, tutorial: false, rel: {}, keepsakes: [], epilogue: false, skin: 'classic', owned: [], quests: null });
 
 export function load(): Save {
   try {

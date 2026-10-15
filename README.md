@@ -70,3 +70,9 @@ src/sfx.ts          synthesized sound, engine, score, rain
 src/weather.ts      rain / fog / lightning overlay
 public/api/         chat.php (AI proxy), live.php (optional feed)
 ```
+
+## Progression & sharing
+
+- **Paint shop (Garage):** two paints are bought with coins; five more are unlocked by finishing each character's story arc.
+- **Daily quests:** three new goals every day (same for everyone, seeded by the date); rewards pay out automatically.
+- **Share my progress (Journal):** renders a 1080×1350 card with your stats, chapter and friendships, then opens the native share sheet or downloads a PNG. It contains game stats only.
